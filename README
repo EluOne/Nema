@@ -1,0 +1,6 @@
+Nova Echo Mining Assistant
+
+The goal of this project it to produce an application to interpret the output of fleet logs produced by the game "Eve Online" by CCP Games.
+This started out as a command line python script, but as I have had requests to make it more user friendly a GUI seemed a good idea.
+
+I am using this project to help me learn python and wxPython, so there will be mistakes/bugs/failings.
