@@ -2,7 +2,7 @@
 'Nova Echo Mining Assistant'
 # Tim Cumming aka Elusive One
 # Created: 05/03/13
-# Modified: 07/03/13
+# Modified: 09/03/13
 
 import os
 import wx
@@ -17,10 +17,17 @@ class MainWindow(wx.Frame):
         # In this case, we select 200px width and the default height.
         wx.Frame.__init__(self, parent, title=title, size=(200,-1))
         
-        self.ore = wx.TextCtrl(self, style=wx.TE_MULTILINE, size=(300,400))
-        self.ice = wx.TextCtrl(self, style=wx.TE_MULTILINE, size=(300,400))
-        self.salvage = wx.TextCtrl(self, style=wx.TE_MULTILINE, size=(300,400))
-        self.other = wx.TextCtrl(self, style=wx.TE_MULTILINE, size=(300,400))
+        self.lblOre = wx.StaticText(self, label="Ore:")
+        self.oreBox = wx.TextCtrl(self, style=wx.TE_MULTILINE, size=(300,400))
+        
+        self.lblIce = wx.StaticText(self, label="Ice:")
+        self.iceBox = wx.TextCtrl(self, style=wx.TE_MULTILINE, size=(300,400))
+        
+        self.lblSalvage = wx.StaticText(self, label="Salvage:")
+        self.salvageBox = wx.TextCtrl(self, style=wx.TE_MULTILINE, size=(300,400))
+        
+        self.lblOther = wx.StaticText(self, label="Other:")
+        self.otherBox = wx.TextCtrl(self, style=wx.TE_MULTILINE, size=(300,400))
         
         self.CreateStatusBar() # A Statusbar in the bottom of the window
 
@@ -35,17 +42,29 @@ class MainWindow(wx.Frame):
         menuBar.Append(filemenu,"&File") # Adding the "filemenu" to the MenuBar
         self.SetMenuBar(menuBar)  # Adding the MenuBar to the Frame content.
 
-        # Events.
+        # Menu events.
         self.Bind(wx.EVT_MENU, self.OnOpen, menuOpen)
         self.Bind(wx.EVT_MENU, self.OnExit, menuExit)
         self.Bind(wx.EVT_MENU, self.OnAbout, menuAbout)
 
         # Use some sizers to see layout options
+        grid = wx.GridBagSizer(hgap=5, vgap=5)
+        
+        self.oreSizer = wx.BoxSizer(wx.VERTICAL)
+        grid.Add(self.lblOre, pos=(0, 0))
+        grid.Add(self.oreBox, pos=(1, 0))
+        
+        grid.Add(self.lblIce, pos=(0, 1))
+        grid.Add(self.iceBox, pos=(1, 1))
+        
+        grid.Add(self.lblSalvage, pos=(0, 2))
+        grid.Add(self.salvageBox, pos=(1, 2))
+        
+        grid.Add(self.lblOther, pos=(0, 3))
+        grid.Add(self.otherBox, pos=(1, 3))
+        
         self.sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.sizer.Add(self.ore, 1, wx.EXPAND)
-        self.sizer.Add(self.ice, 1, wx.EXPAND)
-        self.sizer.Add(self.salvage, 1, wx.EXPAND)
-        self.sizer.Add(self.other, 1, wx.EXPAND)        
+        self.sizer.Add(grid, 1, wx.EXPAND)
         
         #Layout sizers
         self.SetSizer(self.sizer)
@@ -85,7 +104,7 @@ class MainWindow(wx.Frame):
             'Pyroxeres': 0.3, 'Scordite': 0.15, 'Spodumain': 16, 'Veldspar': 0.1}
         IceTypes = {'Blue Ice': 1000}        
 
-        dlg = wx.FileDialog(self, "Choose a log file", self.dirname, "", "*.log", wx.OPEN)
+        dlg = wx.FileDialog(self, "Choose a log file", self.dirname, "", "*.txt", wx.OPEN)
         if dlg.ShowModal() == wx.ID_OK:
             self.filename = dlg.GetFilename()
             self.dirname = dlg.GetDirectory()
@@ -196,26 +215,26 @@ class MainWindow(wx.Frame):
                     for entry in iceGroups:
                         totalIce = entry[4] + totalIce
         
-                    iceOutput = 'Ice:' # This needs moving to the gui as a label
+                    iceOutput = '' # Init String
                     for name in sorted(icePilots):
                         pilotIce = 0
-                        iceOutput = iceOutput + '\n' + name + '\n'           
+                        iceOutput = ('%s%s\n' % (iceOutput, name))           
                         for entry in sorted(iceGroups, key=itemgetter(0,3)):
                             if name == entry[0]:
                                 if compact is True:
-                                    iceOutput = iceOutput + str(entry[2]) + ' x ' + entry[3] + ' = ' + str(entry[4]) + ' m3\n'
+                                    iceOutput = ('%s%s x %s = %s m3\n' % (iceOutput, entry[2], entry[3], entry[4]))
                                 else:
-                                    iceOutput = iceOutput + str(entry[2]) + ' x ' + entry[1] + ' = ' + str(entry[4]) + ' m3\n'
+                                    iceOutput = ('%s%s x %s = %s m3\n' % (iceOutput, entry[2], entry[1], entry[4]))
                                 pilotIce = entry[4] + pilotIce
                         iceTotals.append([name,pilotIce,((pilotIce / totalIce) * 100)])
             
                     iceTotals = sorted(iceTotals, key=itemgetter(2), reverse=True)
-                    iceOutput = iceOutput + '\n\nPercentage of Ice: ' + '(' + str(totalIce) + ' m3)\n\n'
+                    iceOutput = ('%s\nPercentage of Ore: (%s) m3\n\n' % (iceOutput, totalIce))
                     for entry in range(len(iceTotals)):
                         if iceTotals[(entry)][1] > 0:
-                            iceOutput = iceOutput + str(round((iceTotals[(entry)][2]), 2)) + '% ' + str(iceTotals[(entry)][0]) + ': ' + str(iceTotals[(entry)][1]) + ' m3\n'
+                            iceOutput = ('%s%s%% %s: %s m3\n' % (iceOutput, round((iceTotals[(entry)][2]), 2), iceTotals[(entry)][0], iceTotals[(entry)][1]))
 
-                    self.ice.SetValue(iceOutput) # Changes text box content to string iceOutput.
+                    self.iceBox.SetValue(iceOutput) # Changes text box content to string iceOutput.
         
         
                 if oreGroups: # Build a string to output to the text box named ore.
@@ -223,50 +242,52 @@ class MainWindow(wx.Frame):
                     for entry in oreGroups:
                         totalOre = entry[4] + totalOre
         
-                    oreOutput = 'Ore:' # This needs moving to the gui as a label
+                    oreOutput = '' # Init String
                     for name in sorted(orePilots):
                         pilotOre = 0
-                        oreOutput = oreOutput + '\n' + name + '\n'           
+                        oreOutput = ('%s%s\n' % (oreOutput, name))           
                         for entry in sorted(oreGroups, key=itemgetter(0,3)):
                             if name == entry[0]:
                                 if compact is True:
-                                    oreOutput = oreOutput + str(entry[2]) + ' x ' + entry[3] + ' = ' + str(entry[4]) + ' m3\n'
+                                    oreOutput = ('%s%s x %s = %s m3\n' % (oreOutput, entry[2], entry[3], entry[4]))
                                 else:
-                                    oreOutput = oreOutput + str(entry[2]) + ' x ' + entry[1] + ' = ' + str(entry[4]) + ' m3\n'
+                                    oreOutput = ('%s%s x %s = %s m3\n' % (oreOutput, entry[2], entry[1], entry[4]))
                                 pilotOre = entry[4] + pilotOre
                         oreTotals.append([name,pilotOre,((pilotOre / totalOre) * 100)])
+                        oreOutput = oreOutput + '\n'
             
                     oreTotals = sorted(oreTotals, key=itemgetter(2), reverse=True)
-                    oreOutput = oreOutput + '\n\nPercentage of Ore: ' + '(' + str(totalOre) + ' m3)\n\n'
+                    oreOutput = ('%s\nPercentage of Ore: (%s) m3\n\n' % (oreOutput, totalOre))
                     for entry in range(len(oreTotals)):
                         if oreTotals[(entry)][1] > 0:
-                            oreOutput = oreOutput + str(round((oreTotals[(entry)][2]), 2)) + '% ' + str(oreTotals[(entry)][0]) + ': ' + str(oreTotals[(entry)][1]) + ' m3\n'
+                            oreOutput = ('%s%s%% %s: %s m3\n' % (oreOutput, round((oreTotals[(entry)][2]), 2), oreTotals[(entry)][0], oreTotals[(entry)][1]))
 
-                    self.ore.SetValue(oreOutput) # Changes text box content to string oreOutput.
+                    self.oreBox.SetValue(oreOutput) # Changes text box content to string oreOutput.
         
         
                 if salvage: # Build a string to output to the text box named salvage.
-                    salvageOutput = 'Salvaged Components:'
+                    salvageOutput = '' # Init String
                     pilot = ''
                     for entry in sorted(salvage, key=itemgetter(0)):
                         if pilot != entry[0]:
                             pilot = entry[0]
-                            salvageOutput = salvageOutput + '\n' + pilot + '\n'
+                            salvageOutput = ('%s%s\n' % (salvageOutput, pilot))           
                         salvageOutput = salvageOutput + str(entry[2]) + ' x ' + entry[1] + '\n'
+                        salvageOutput = ('%s%s x %s\n' % (salvageOutput, entry[2], entry[1]))
         
-                    self.salvage.SetValue(salvageOutput) # Changes text box content to string salvageOutput.
+                    self.salvageBox.SetValue(salvageOutput) # Changes text box content to string salvageOutput.
 
         
                 if other: # Build a string to output to the text box named other.
-                    otherOutput = 'Recovered Items:'
+                    otherOutput = '' # Init String
                     pilot = ''
                     for entry in sorted(other, key=itemgetter(0)):
                         if pilot != entry[0]:
                             pilot = entry[0]
-                            otherOutput = otherOutput + '\n' + pilot + '\n'
-                        otherOutput = otherOutput + str(entry[2]) + ' x ' + entry[1] + '\n'
+                            otherOutput = ('%s%s\n' % (otherOutput, pilot))           
+                        otherOutput = ('%s%s x %s\n' % (otherOutput, entry[2], entry[1]))
 
-                    self.other.SetValue(otherOutput) # Changes text box content to string otherOutput.   
+                    self.otherBox.SetValue(otherOutput) # Changes text box content to string otherOutput.   
 
         dlg.Destroy()
 
