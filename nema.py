@@ -2,7 +2,7 @@
 'Nova Echo Mining Assistant'
 # Tim Cumming aka Elusive One
 # Created: 05/03/13
-# Modified: 09/03/13
+# Modified: 10/03/13
 
 import os
 import wx
@@ -269,10 +269,12 @@ class MainWindow(wx.Frame):
                     salvageOutput = '' # Init String
                     pilot = ''
                     for entry in sorted(salvage, key=itemgetter(0)):
-                        if pilot != entry[0]:
+                        if pilot == '': # This will be the first entry
                             pilot = entry[0]
                             salvageOutput = ('%s%s\n' % (salvageOutput, pilot))           
-                        salvageOutput = salvageOutput + str(entry[2]) + ' x ' + entry[1] + '\n'
+                        elif pilot != entry[0]: # All others will need a /n adding to space them out
+                            pilot = entry[0]
+                            salvageOutput = ('%s\n%s\n' % (salvageOutput, pilot))           
                         salvageOutput = ('%s%s x %s\n' % (salvageOutput, entry[2], entry[1]))
         
                     self.salvageBox.SetValue(salvageOutput) # Changes text box content to string salvageOutput.
@@ -282,9 +284,12 @@ class MainWindow(wx.Frame):
                     otherOutput = '' # Init String
                     pilot = ''
                     for entry in sorted(other, key=itemgetter(0)):
-                        if pilot != entry[0]:
+                        if pilot == '': # This will be the first entry
                             pilot = entry[0]
                             otherOutput = ('%s%s\n' % (otherOutput, pilot))           
+                        elif pilot != entry[0]: # All others will need a /n adding to space them out
+                            pilot = entry[0]
+                            otherOutput = ('%s\n%s\n' % (otherOutput, pilot))           
                         otherOutput = ('%s%s x %s\n' % (otherOutput, entry[2], entry[1]))
 
                     self.otherBox.SetValue(otherOutput) # Changes text box content to string otherOutput.   
