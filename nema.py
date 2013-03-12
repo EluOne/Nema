@@ -2,9 +2,10 @@
 'Nova Echo Mining Assistant'
 # Tim Cumming aka Elusive One
 # Created: 05/03/13
-# Modified: 10/03/13
+# Modified: 12/03/13
 
 import os
+import sys
 import wx
 from operator import itemgetter
 
@@ -15,19 +16,39 @@ class MainWindow(wx.Frame):
         
         # A "-1" in the size parameter instructs wxWidgets to use the default size.
         # In this case, we select 200px width and the default height.
-        wx.Frame.__init__(self, parent, title=title, size=(200,-1))
+        wx.Frame.__init__(self, parent, title=title, size=(1024, 600))
         
-        self.lblOre = wx.StaticText(self, label="Ore:")
-        self.oreBox = wx.TextCtrl(self, style=wx.TE_MULTILINE, size=(300,400))
+        panel = wx.Panel(self, -1)
+        panel.SetBackgroundColour(wx.SystemSettings_GetColour(wx.SYS_COLOUR_BTNFACE))
         
-        self.lblIce = wx.StaticText(self, label="Ice:")
-        self.iceBox = wx.TextCtrl(self, style=wx.TE_MULTILINE, size=(300,400))
         
-        self.lblSalvage = wx.StaticText(self, label="Salvage:")
-        self.salvageBox = wx.TextCtrl(self, style=wx.TE_MULTILINE, size=(300,400))
+        self.lblOre = wx.StaticText(panel, label="Ore:")
+        self.oreBox = wx.TextCtrl(panel, style=wx.TE_MULTILINE, size=(-1,-1))
+        self.oreBox.SetFont(wx.Font(9, wx.FONTFAMILY_DEFAULT,
+                                                   wx.FONTSTYLE_NORMAL,
+                                                   wx.FONTWEIGHT_NORMAL,
+                                                   False))
         
-        self.lblOther = wx.StaticText(self, label="Other:")
-        self.otherBox = wx.TextCtrl(self, style=wx.TE_MULTILINE, size=(300,400))
+        self.lblIce = wx.StaticText(panel, label="Ice:")
+        self.iceBox = wx.TextCtrl(panel, style=wx.TE_MULTILINE, size=(-1,-1))
+        self.iceBox.SetFont(wx.Font(9, wx.FONTFAMILY_DEFAULT,
+                                                   wx.FONTSTYLE_NORMAL,
+                                                   wx.FONTWEIGHT_NORMAL,
+                                                   False))
+        
+        self.lblSalvage = wx.StaticText(panel, label="Salvage:")
+        self.salvageBox = wx.TextCtrl(panel, style=wx.TE_MULTILINE, size=(-1,-1))
+        self.salvageBox.SetFont(wx.Font(9, wx.FONTFAMILY_DEFAULT,
+                                                   wx.FONTSTYLE_NORMAL,
+                                                   wx.FONTWEIGHT_NORMAL,
+                                                   False))
+        
+        self.lblOther = wx.StaticText(panel, label="Other:")
+        self.otherBox = wx.TextCtrl(panel, style=wx.TE_MULTILINE, size=(-1,-1))
+        self.otherBox.SetFont(wx.Font(9, wx.FONTFAMILY_DEFAULT,
+                                                   wx.FONTSTYLE_NORMAL,
+                                                   wx.FONTWEIGHT_NORMAL,
+                                                   False))
         
         self.CreateStatusBar() # A Statusbar in the bottom of the window
 
@@ -48,29 +69,35 @@ class MainWindow(wx.Frame):
         self.Bind(wx.EVT_MENU, self.OnAbout, menuAbout)
 
         # Use some sizers to see layout options
-        grid = wx.GridBagSizer(hgap=5, vgap=5)
-        
-        self.oreSizer = wx.BoxSizer(wx.VERTICAL)
-        grid.Add(self.lblOre, pos=(0, 0))
-        grid.Add(self.oreBox, pos=(1, 0))
-        
-        grid.Add(self.lblIce, pos=(0, 1))
-        grid.Add(self.iceBox, pos=(1, 1))
-        
-        grid.Add(self.lblSalvage, pos=(0, 2))
-        grid.Add(self.salvageBox, pos=(1, 2))
-        
-        grid.Add(self.lblOther, pos=(0, 3))
-        grid.Add(self.otherBox, pos=(1, 3))
-        
-        self.sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.sizer.Add(grid, 1, wx.EXPAND)
-        
-        #Layout sizers
-        self.SetSizer(self.sizer)
-        self.SetAutoLayout(1)
-        self.sizer.Fit(self)
-        self.Show()
+        sizer = wx.BoxSizer(wx.HORIZONTAL)
+        oreSizer = wx.BoxSizer(wx.VERTICAL)
+        iceSizer = wx.BoxSizer(wx.VERTICAL)
+        salvageSizer = wx.BoxSizer(wx.VERTICAL)
+        otherSizer = wx.BoxSizer(wx.VERTICAL)
+        panel.SetSizer(sizer)
+  
+        oreSizer.Add(self.lblOre, 0, wx.EXPAND | wx.ALL, 1)
+        oreSizer.Add(self.oreBox, 1, wx.EXPAND | wx.ALL, 1)
+  
+        iceSizer.Add(self.lblIce, 0, wx.EXPAND | wx.ALL, 1)
+        iceSizer.Add(self.iceBox, 1, wx.EXPAND | wx.ALL, 1)
+
+        salvageSizer.Add(self.lblSalvage, 0, wx.EXPAND | wx.ALL, 1)
+        salvageSizer.Add(self.salvageBox, 1, wx.EXPAND | wx.ALL, 1)
+
+        otherSizer.Add(self.lblOther, 0, wx.EXPAND | wx.ALL, 1)
+        otherSizer.Add(self.otherBox, 1, wx.EXPAND | wx.ALL, 1)
+  
+        sizer.Add(oreSizer, 1, wx.EXPAND | wx.ALL, 1)
+        sizer.Add(iceSizer, 1, wx.EXPAND | wx.ALL, 1)
+        sizer.Add(salvageSizer, 1, wx.EXPAND | wx.ALL, 1)
+        sizer.Add(otherSizer, 1, wx.EXPAND | wx.ALL, 1)
+  
+        mainSizer = wx.BoxSizer(wx.VERTICAL)
+        mainSizer.Add(panel, 1, wx.EXPAND)
+        self.SetSizer(mainSizer)
+        mainSizer.Layout()
+
 
     def OnAbout(self, e):
         # A message dialog box with an OK button. wx.OK is a standard ID in wxWidgets.
@@ -102,7 +129,7 @@ class MainWindow(wx.Frame):
             'Gneiss': 5, 'Hedbergite': 3, 'Hemorphite': 3, 'Jaspet': 2,
             'Kernite': 1.2, 'Mercoxit': 40, 'Omber': 0.6, 'Plagioclase': 0.35,
             'Pyroxeres': 0.3, 'Scordite': 0.15, 'Spodumain': 16, 'Veldspar': 0.1}
-        IceTypes = {'Blue Ice': 1000}        
+        IceTypes = {'Blue Ice': 1000, 'White Glaze': 1000, 'Glacial Mass': 1000, 'Clear Icicle': 1000}
 
         dlg = wx.FileDialog(self, "Choose a log file", self.dirname, "", "*.txt", wx.OPEN)
         if dlg.ShowModal() == wx.ID_OK:
@@ -258,10 +285,11 @@ class MainWindow(wx.Frame):
             
                     oreTotals = sorted(oreTotals, key=itemgetter(2), reverse=True)
                     oreOutput = ('%s\nPercentage of Ore: (%s) m3\n\n' % (oreOutput, totalOre))
+                    
                     for entry in range(len(oreTotals)):
                         if oreTotals[(entry)][1] > 0:
                             oreOutput = ('%s%s%% %s: %s m3\n' % (oreOutput, round((oreTotals[(entry)][2]), 2), oreTotals[(entry)][0], oreTotals[(entry)][1]))
-
+                            
                     self.oreBox.SetValue(oreOutput) # Changes text box content to string oreOutput.
         
         
@@ -299,6 +327,10 @@ class MainWindow(wx.Frame):
     def OnExit(self, e):
         self.Close(True)  # Close the frame.
 
-app = wx.App(False)
+app = wx.App(0)
+
 frame = MainWindow(None, "NEMA")
+app.SetTopWindow(frame)
+frame.Show()
+
 app.MainLoop()
