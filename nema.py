@@ -35,7 +35,7 @@ class MainWindow(wx.Frame):
                                                    wx.FONTWEIGHT_NORMAL,
                                                    False))
 
-        self.lblSalvage = wx.StaticText(panel, label="Salvage:")
+        self.lblSalvage = wx.StaticText(panel, label="Salvaged Materials:")
         self.salvageBox = wx.TextCtrl(panel, style=wx.TE_MULTILINE, size=(-1,-1))
         self.salvageBox.SetFont(wx.Font(9, wx.FONTFAMILY_DEFAULT,
                                                    wx.FONTSTYLE_NORMAL,
@@ -252,21 +252,21 @@ class MainWindow(wx.Frame):
                 if ice or oreGroups or salvage or other:
                     if ice: # Build a string to output to the text box named ice.
                         totalIce = 0
-                        for entry in iceGroups:
+                        for entry in ice:
                             totalIce = entry[4] + totalIce
 
                         iceOutput = '' # Init String
                         for name in sorted(icePilots):
                             pilotIce = 0
                             iceOutput = ('%s%s\n' % (iceOutput, name))
-                            for entry in sorted(iceGroups, key=itemgetter(0,3)):
+                            for entry in sorted(ice, key=itemgetter(0,3)):
                                 if name == entry[0]:
                                     if compact is True:
                                         iceOutput = ('%s%s x %s = %s m3\n' % (iceOutput, entry[2], entry[3], entry[4]))
                                     else:
                                         iceOutput = ('%s%s x %s = %s m3\n' % (iceOutput, entry[2], entry[1], entry[4]))
                                     pilotIce = entry[4] + pilotIce
-                            iceTotals.append([name,pilotIce,((pilotIce / totalIce) * 100)])
+                            iceTotals.append([name,pilotIce,((float(pilotIce) / float(totalIce)) * 100)])
 
                         iceTotals = sorted(iceTotals, key=itemgetter(2), reverse=True)
                         iceOutput = ('%s\nPercentage of Ore: (%s) m3\n\n' % (iceOutput, totalIce))
@@ -293,7 +293,7 @@ class MainWindow(wx.Frame):
                                     else:
                                         oreOutput = ('%s%s x %s = %s m3\n' % (oreOutput, entry[2], entry[1], entry[4]))
                                     pilotOre = entry[4] + pilotOre
-                            oreTotals.append([name,pilotOre,((pilotOre / totalOre) * 100)])
+                            oreTotals.append([name,pilotOre,((float(pilotOre) / float(totalOre)) * 100)])
                             oreOutput = oreOutput + '\n'
 
                         oreTotals = sorted(oreTotals, key=itemgetter(2), reverse=True)
