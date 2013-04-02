@@ -270,9 +270,11 @@ class MainWindow(wx.Frame):
 
                         iceTotals = sorted(iceTotals, key=itemgetter(2), reverse=True)
                         iceOutput = ('%s\nPercentage of Ore: (%s) m3\n\n' % (iceOutput, totalIce))
-                        for entry in range(len(iceTotals)):
+
+                        iceRange = range(len(iceTotals)) # Remove calc from loop below.
+                        for entry in iceRange:
                             if iceTotals[(entry)][1] > 0:
-                                iceOutput = ('%s%s%% %s: %s m3\n' % (iceOutput, round((iceTotals[(entry)][2]), 2), iceTotals[(entry)][0], iceTotals[(entry)][1]))
+                                iceOutput = ('%s%.2f%% %s: %s m3\n' % (iceOutput, (iceTotals[(entry)][2]), iceTotals[(entry)][0], iceTotals[(entry)][1]))
 
                         self.iceBox.SetValue(iceOutput) # Changes text box content to string iceOutput.
 
@@ -289,19 +291,20 @@ class MainWindow(wx.Frame):
                             for entry in sorted(oreGroups, key=itemgetter(0,3)):
                                 if name == entry[0]:
                                     if compact is True:
-                                        oreOutput = ('%s%s x %s = %s m3\n' % (oreOutput, entry[2], entry[3], entry[4]))
+                                        oreOutput = ('%s%s x %s = %.2f m3\n' % (oreOutput, entry[2], entry[3], entry[4]))
                                     else:
-                                        oreOutput = ('%s%s x %s = %s m3\n' % (oreOutput, entry[2], entry[1], entry[4]))
+                                        oreOutput = ('%s%s x %s = %.2f m3\n' % (oreOutput, entry[2], entry[1], entry[4]))
                                     pilotOre = entry[4] + pilotOre
                             oreTotals.append([name,pilotOre,((float(pilotOre) / float(totalOre)) * 100)])
                             oreOutput = oreOutput + '\n'
 
                         oreTotals = sorted(oreTotals, key=itemgetter(2), reverse=True)
-                        oreOutput = ('%s\nPercentage of Ore: (%s) m3\n\n' % (oreOutput, totalOre))
+                        oreOutput = ('%s\nPercentage of Ore: (%.2f) m3\n\n' % (oreOutput, totalOre))
 
-                        for entry in range(len(oreTotals)):
+                        oreRange = range(len(oreTotals)) # Remove calc from loop below.
+                        for entry in oreRange:
                             if oreTotals[(entry)][1] > 0:
-                                oreOutput = ('%s%s%% %s: %s m3\n' % (oreOutput, round((oreTotals[(entry)][2]), 2), oreTotals[(entry)][0], oreTotals[(entry)][1]))
+                                oreOutput = ('%s%.2f%% %s: %.2f m3\n' % (oreOutput, (oreTotals[(entry)][2]), oreTotals[(entry)][0], oreTotals[(entry)][1]))
 
                         self.oreBox.SetValue(oreOutput) # Changes text box content to string oreOutput.
 
