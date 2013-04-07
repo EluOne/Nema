@@ -155,7 +155,9 @@ class MainWindow(wx.Frame):
 
 
             if fileCheck == 'OK':
-                for lineNum in range(len(content)):
+                numLines = range(len(content))
+                
+                for lineNum in numLines:
                     # Process each line that was in the log file.
                     line = content[lineNum].rstrip('\r\n')
 
@@ -190,7 +192,9 @@ class MainWindow(wx.Frame):
                     # Compact Mode:
                     # Process the list of ore mined for duplicate type entries, and add them together. This produces a list that only details the ore group.
                     oreGroups = sorted(oreGroups, key=itemgetter(0,3))
-                    for item in range(len(oreGroups)):
+                    numItems = range(len(oreGroups))
+                    
+                    for item in numItems:
                         if item > 0:
                             previous = item -1
                             if (oreGroups[item][0] == oreGroups[previous][0]) and (oreGroups[item][3] == oreGroups[previous][3]):
@@ -205,7 +209,9 @@ class MainWindow(wx.Frame):
                 else:
                     # Process the list of ore mined for duplicate entries, and add them together.
                     oreGroups = sorted(oreGroups, key=itemgetter(0,1))
-                    for item in range(len(oreGroups)):
+                    numItems = range(len(oreGroups))
+                    
+                    for item in numItems:
                         if item > 0:
                             previous = item -1
                             if (oreGroups[item][0] == oreGroups[previous][0]) and (oreGroups[item][1] == oreGroups[previous][1]):
@@ -221,7 +227,9 @@ class MainWindow(wx.Frame):
 
                 # Process the list of salvaged items for duplicate entries, and add them together.
                 salvage = sorted(salvage, key=itemgetter(0,1))
-                for item in range(len(salvage)):
+                numItems = range(len(salvage))
+                
+                for item in numItems:
                     if item > 0:
                         previous = item -1
                         if (salvage[item][0] == salvage[previous][0]) and (salvage[item][1] == salvage[previous][1]):
@@ -236,7 +244,9 @@ class MainWindow(wx.Frame):
 
                 # Process the list of other items for duplicate entries, and add them together.
                 other = sorted(other, key=itemgetter(0,1))
-                for item in range(len(other)):
+                numItems = range(len(other))
+                
+                for item in numItems:
                     if item > 0:
                         previous = item -1
                         if (other[item][0] == other[previous][0]) and (other[item][1] == other[previous][1]):
