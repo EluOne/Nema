@@ -18,7 +18,7 @@ class MainWindow(wx.Frame):
         wx.Frame.__init__(self, parent, title=title, size=(1024, 600))
 
         panel = wx.Panel(self, -1)
-        panel.SetBackgroundColour(wx.NullColor) # Use system default colour
+        panel.SetBackgroundColour(wx.NullColour) # Use system default colour
 
         # Set up some content holders and labels in the frame.
         self.lblOre = wx.StaticText(panel, label="Ore:")
@@ -156,7 +156,7 @@ class MainWindow(wx.Frame):
 
             if fileCheck == 'OK':
                 numLines = range(len(content))
-                
+
                 for lineNum in numLines:
                     # Process each line that was in the log file.
                     line = content[lineNum].rstrip('\r\n')
@@ -193,7 +193,7 @@ class MainWindow(wx.Frame):
                     # Process the list of ore mined for duplicate type entries, and add them together. This produces a list that only details the ore group.
                     oreGroups = sorted(oreGroups, key=itemgetter(0,3))
                     numItems = range(len(oreGroups))
-                    
+
                     for item in numItems:
                         if item > 0:
                             previous = item -1
@@ -210,7 +210,7 @@ class MainWindow(wx.Frame):
                     # Process the list of ore mined for duplicate entries, and add them together.
                     oreGroups = sorted(oreGroups, key=itemgetter(0,1))
                     numItems = range(len(oreGroups))
-                    
+
                     for item in numItems:
                         if item > 0:
                             previous = item -1
@@ -228,7 +228,7 @@ class MainWindow(wx.Frame):
                 # Process the list of salvaged items for duplicate entries, and add them together.
                 salvage = sorted(salvage, key=itemgetter(0,1))
                 numItems = range(len(salvage))
-                
+
                 for item in numItems:
                     if item > 0:
                         previous = item -1
@@ -245,7 +245,7 @@ class MainWindow(wx.Frame):
                 # Process the list of other items for duplicate entries, and add them together.
                 other = sorted(other, key=itemgetter(0,1))
                 numItems = range(len(other))
-                
+
                 for item in numItems:
                     if item > 0:
                         previous = item -1
@@ -348,7 +348,7 @@ class MainWindow(wx.Frame):
 
                         self.otherBox.SetValue(otherOutput) # Changes text box content to string otherOutput.
 
-                self.statusbar.SetBackgroundColour(wx.NullColor) # Resets to system default if changed by file check.
+                self.statusbar.SetBackgroundColour(wx.NullColour) # Resets to system default if changed by file check.
                 self.statusbar.SetStatusText(self.filename)
 
         dlg.Destroy()
