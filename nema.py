@@ -3,8 +3,6 @@
 # Tim Cumming aka Elusive One
 # Created: 05/03/13
 
-import os
-import sys
 import wx
 from operator import itemgetter
 
@@ -214,7 +212,7 @@ class MainWindow(wx.Frame):
                             previous = item -1
                             if (oreGroups[item][0] == oreGroups[previous][0]) and (oreGroups[item][1] == oreGroups[previous][1]):
                                 newQuantity = (int(oreGroups[item][2]) + int(oreGroups[previous][2]))
-                                newVolume = (OreWeights[oreGroups[item][3]] * int(newQuantity))
+                                newVolume = (OreTypes[oreGroups[item][3]] * int(newQuantity))
                                 oreGroups[item] = [oreGroups[item][0], oreGroups[item][1], newQuantity, oreGroups[item][3], newVolume]
                                 oreGroups[previous] = 'deleted'
 
