@@ -13,8 +13,6 @@ class MainWindow(wx.Frame):
     def __init__(self, parent, title):
         self.dirname=''
 
-        # A "-1" in the size parameter instructs wxWidgets to use the default size.
-        # In this case, we select 200px width and the default height.
         wx.Frame.__init__(self, parent, title=title, size=(1024, 600))
 
         panel = wx.Panel(self, -1)
@@ -358,10 +356,10 @@ class MainWindow(wx.Frame):
         if dlg.ShowModal() == wx.ID_YES:
             self.Close(True)
 
-app = wx.App(0)
 
-frame = MainWindow(None, "Nema")
-app.SetTopWindow(frame)
-frame.Show()
-
-app.MainLoop()
+if __name__ == '__main__':
+    app = wx.App(0)
+    frame = MainWindow(None, "Nema")
+    app.SetTopWindow(frame)
+    frame.Show()
+    app.MainLoop()
