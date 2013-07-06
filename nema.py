@@ -24,54 +24,54 @@ from operator import itemgetter
 
 class MainWindow(wx.Frame):
     def __init__(self, parent, title):
-        self.dirname=''
+        self.dirname = ''
 
         wx.Frame.__init__(self, parent, title=title, size=(1024, 600))
 
         panel = wx.Panel(self, -1)
-        panel.SetBackgroundColour(wx.NullColour) # Use system default colour
+        panel.SetBackgroundColour(wx.NullColour)  # Use system default colour
 
         # Set up some content holders and labels in the frame.
         self.lblOre = wx.StaticText(panel, label="Ore:")
-        self.oreBox = wx.TextCtrl(panel, style=wx.TE_MULTILINE, size=(-1,-1))
+        self.oreBox = wx.TextCtrl(panel, style=wx.TE_MULTILINE, size=(-1, -1))
         self.oreBox.SetFont(wx.Font(9, wx.FONTFAMILY_DEFAULT,
                                                    wx.FONTSTYLE_NORMAL,
                                                    wx.FONTWEIGHT_NORMAL,
                                                    False))
 
         self.lblIce = wx.StaticText(panel, label="Ice:")
-        self.iceBox = wx.TextCtrl(panel, style=wx.TE_MULTILINE, size=(-1,-1))
+        self.iceBox = wx.TextCtrl(panel, style=wx.TE_MULTILINE, size=(-1, -1))
         self.iceBox.SetFont(wx.Font(9, wx.FONTFAMILY_DEFAULT,
                                                    wx.FONTSTYLE_NORMAL,
                                                    wx.FONTWEIGHT_NORMAL,
                                                    False))
 
         self.lblSalvage = wx.StaticText(panel, label="Salvaged Materials:")
-        self.salvageBox = wx.TextCtrl(panel, style=wx.TE_MULTILINE, size=(-1,-1))
+        self.salvageBox = wx.TextCtrl(panel, style=wx.TE_MULTILINE, size=(-1, -1))
         self.salvageBox.SetFont(wx.Font(9, wx.FONTFAMILY_DEFAULT,
                                                    wx.FONTSTYLE_NORMAL,
                                                    wx.FONTWEIGHT_NORMAL,
                                                    False))
 
         self.lblOther = wx.StaticText(panel, label="Other:")
-        self.otherBox = wx.TextCtrl(panel, style=wx.TE_MULTILINE, size=(-1,-1))
+        self.otherBox = wx.TextCtrl(panel, style=wx.TE_MULTILINE, size=(-1, -1))
         self.otherBox.SetFont(wx.Font(9, wx.FONTFAMILY_DEFAULT,
                                                    wx.FONTSTYLE_NORMAL,
                                                    wx.FONTWEIGHT_NORMAL,
                                                    False))
 
-        self.statusbar = self.CreateStatusBar() # A Statusbar in the bottom of the window
+        self.statusbar = self.CreateStatusBar()  # A Statusbar in the bottom of the window
         self.statusbar.SetStatusText('Welcome to Nema')
 
         # Setting up the menu.
-        filemenu= wx.Menu()
-        menuAbout= filemenu.Append(wx.ID_ABOUT, "&About"," Information about this program")
-        menuOpen = filemenu.Append(wx.ID_OPEN, "&Open"," Open a log file")
-        menuExit = filemenu.Append(wx.ID_EXIT,"E&xit"," Terminate the program")
+        filemenu = wx.Menu()
+        menuAbout = filemenu.Append(wx.ID_ABOUT, "&About", " Information about this program")
+        menuOpen = filemenu.Append(wx.ID_OPEN, "&Open", " Open a log file")
+        menuExit = filemenu.Append(wx.ID_EXIT, "E&xit", " Terminate the program")
 
         # Creating the menubar.
         menuBar = wx.MenuBar()
-        menuBar.Append(filemenu,"&File") # Adding the "filemenu" to the MenuBar
+        menuBar.Append(filemenu, "&File")  # Adding the "filemenu" to the MenuBar
         self.SetMenuBar(menuBar)  # Adding the MenuBar to the Frame content.
 
         # Menu events.
@@ -109,14 +109,13 @@ class MainWindow(wx.Frame):
         self.SetSizer(mainSizer)
         mainSizer.Layout()
 
-
     def OnAbout(self, e):
         # A message dialog box with an OK button. wx.OK is a standard ID in wxWidgets.
         dlg = wx.MessageDialog(self, 'Nova Echo Mining Assistant', 'About Nema', wx.OK | wx.ICON_INFORMATION)
-        dlg.ShowModal() # Show it
-        dlg.Destroy() # finally destroy it when finished.
+        dlg.ShowModal()  # Show it
+        dlg.Destroy()  # finally destroy it when finished.
 
-    def OnOpen(self,e):
+    def OnOpen(self, e):
         # Open a file
         self.dirname = ''
 
@@ -134,7 +133,6 @@ class MainWindow(wx.Frame):
 
         oreTotals = []
         iceTotals = []
-
 
         # These are the expected column headers from the first row of the data file
         columns = {'Time', 'Character', 'Item Type', 'Quantity', 'Item Group'}
@@ -163,7 +161,6 @@ class MainWindow(wx.Frame):
                     self.statusbar.SetBackgroundColour('RED')
                     self.statusbar.SetStatusText(self.filename + ' is not a valid Fleet Log. Please check the file and try again.')
                     fileCheck = 'FAILED'
-
 
             if fileCheck == 'OK':
                 numLines = range(len(content))
@@ -198,16 +195,15 @@ class MainWindow(wx.Frame):
                             else:
                                 other.append([data[1], data[2], data[3], data[4], 0])
 
-
                 if compact is True:
                     # Compact Mode:
                     # Process the list of ore mined for duplicate type entries, and add them together. This produces a list that only details the ore group.
-                    oreGroups = sorted(oreGroups, key=itemgetter(0,3))
+                    oreGroups = sorted(oreGroups, key=itemgetter(0, 3))
                     numItems = range(len(oreGroups))
 
                     for item in numItems:
                         if item > 0:
-                            previous = item -1
+                            previous = item - 1
                             if (oreGroups[item][0] == oreGroups[previous][0]) and (oreGroups[item][3] == oreGroups[previous][3]):
                                 newQuantity = (int(oreGroups[item][2]) + int(oreGroups[previous][2]))
                                 newVolume = (OreTypes[oreGroups[item][3]] * int(newQuantity))
@@ -219,12 +215,12 @@ class MainWindow(wx.Frame):
                             oreGroups.remove(o)
                 else:
                     # Process the list of ore mined for duplicate entries, and add them together.
-                    oreGroups = sorted(oreGroups, key=itemgetter(0,1))
+                    oreGroups = sorted(oreGroups, key=itemgetter(0, 1))
                     numItems = range(len(oreGroups))
 
                     for item in numItems:
                         if item > 0:
-                            previous = item -1
+                            previous = item - 1
                             if (oreGroups[item][0] == oreGroups[previous][0]) and (oreGroups[item][1] == oreGroups[previous][1]):
                                 newQuantity = (int(oreGroups[item][2]) + int(oreGroups[previous][2]))
                                 newVolume = (OreTypes[oreGroups[item][3]] * int(newQuantity))
@@ -235,14 +231,13 @@ class MainWindow(wx.Frame):
                         if o == 'deleted':
                             oreGroups.remove(o)
 
-
                 # Process the list of salvaged items for duplicate entries, and add them together.
-                salvage = sorted(salvage, key=itemgetter(0,1))
+                salvage = sorted(salvage, key=itemgetter(0, 1))
                 numItems = range(len(salvage))
 
                 for item in numItems:
                     if item > 0:
-                        previous = item -1
+                        previous = item - 1
                         if (salvage[item][0] == salvage[previous][0]) and (salvage[item][1] == salvage[previous][1]):
                             newQuantity = (int(salvage[item][2]) + int(salvage[previous][2]))
                             salvage[item] = [salvage[item][0], salvage[item][1], newQuantity, 0]
@@ -252,14 +247,13 @@ class MainWindow(wx.Frame):
                     if s == 'deleted':
                         salvage.remove(s)
 
-
                 # Process the list of other items for duplicate entries, and add them together.
-                other = sorted(other, key=itemgetter(0,1))
+                other = sorted(other, key=itemgetter(0, 1))
                 numItems = range(len(other))
 
                 for item in numItems:
                     if item > 0:
-                        previous = item -1
+                        previous = item - 1
                         if (other[item][0] == other[previous][0]) and (other[item][1] == other[previous][1]):
                             newQuantity = (int(other[item][2]) + int(other[previous][2]))
                             other[item] = [other[item][0], other[item][1], newQuantity, 0]
@@ -269,97 +263,93 @@ class MainWindow(wx.Frame):
                     if e == 'deleted':
                         other.remove(e)
 
-
                 if ice or oreGroups or salvage or other:
-                    if ice: # Build a string to output to the text box named ice.
+                    if ice:  # Build a string to output to the text box named ice.
                         totalIce = 0
                         for entry in ice:
                             totalIce = entry[4] + totalIce
 
-                        iceOutput = '' # Init String
+                        iceOutput = ''  # Init String
                         for name in sorted(icePilots):
                             pilotIce = 0
                             iceOutput = ('%s%s\n' % (iceOutput, name))
-                            for entry in sorted(ice, key=itemgetter(0,3)):
+                            for entry in sorted(ice, key=itemgetter(0, 3)):
                                 if name == entry[0]:
                                     if compact is True:
                                         iceOutput = ('%s%s x %s = %s m3\n' % (iceOutput, entry[2], entry[3], entry[4]))
                                     else:
                                         iceOutput = ('%s%s x %s = %s m3\n' % (iceOutput, entry[2], entry[1], entry[4]))
                                     pilotIce = entry[4] + pilotIce
-                            iceTotals.append([name,pilotIce,((float(pilotIce) / float(totalIce)) * 100)])
+                            iceTotals.append([name, pilotIce, ((float(pilotIce) / float(totalIce)) * 100)])
 
                         iceTotals = sorted(iceTotals, key=itemgetter(2), reverse=True)
                         iceOutput = ('%s\nPercentage of Ore: (%s) m3\n\n' % (iceOutput, totalIce))
 
-                        iceRange = range(len(iceTotals)) # Remove calc from loop below.
+                        iceRange = range(len(iceTotals))  # Remove calc from loop below.
                         for entry in iceRange:
                             if iceTotals[(entry)][1] > 0:
                                 iceOutput = ('%s%.2f%% %s: %s m3\n' % (iceOutput, (iceTotals[(entry)][2]), iceTotals[(entry)][0], iceTotals[(entry)][1]))
 
-                        self.iceBox.SetValue(iceOutput) # Changes text box content to string iceOutput.
+                        self.iceBox.SetValue(iceOutput)  # Changes text box content to string iceOutput.
 
-
-                    if oreGroups: # Build a string to output to the text box named ore.
+                    if oreGroups:  # Build a string to output to the text box named ore.
                         totalOre = 0
                         for entry in oreGroups:
                             totalOre = entry[4] + totalOre
 
-                        oreOutput = '' # Init String
+                        oreOutput = ''  # Init String
                         for name in sorted(orePilots):
                             pilotOre = 0
                             oreOutput = ('%s%s\n' % (oreOutput, name))
-                            for entry in sorted(oreGroups, key=itemgetter(0,3)):
+                            for entry in sorted(oreGroups, key=itemgetter(0, 3)):
                                 if name == entry[0]:
                                     if compact is True:
                                         oreOutput = ('%s%s x %s = %.2f m3\n' % (oreOutput, entry[2], entry[3], entry[4]))
                                     else:
                                         oreOutput = ('%s%s x %s = %.2f m3\n' % (oreOutput, entry[2], entry[1], entry[4]))
                                     pilotOre = entry[4] + pilotOre
-                            oreTotals.append([name,pilotOre,((float(pilotOre) / float(totalOre)) * 100)])
+                            oreTotals.append([name, pilotOre, ((float(pilotOre) / float(totalOre)) * 100)])
                             oreOutput = oreOutput + '\n'
 
                         oreTotals = sorted(oreTotals, key=itemgetter(2), reverse=True)
                         oreOutput = ('%s\nPercentage of Ore: (%.2f) m3\n\n' % (oreOutput, totalOre))
 
-                        oreRange = range(len(oreTotals)) # Remove calc from loop below.
+                        oreRange = range(len(oreTotals))  # Remove calc from loop below.
                         for entry in oreRange:
                             if oreTotals[(entry)][1] > 0:
                                 oreOutput = ('%s%.2f%% %s: %.2f m3\n' % (oreOutput, (oreTotals[(entry)][2]), oreTotals[(entry)][0], oreTotals[(entry)][1]))
 
-                        self.oreBox.SetValue(oreOutput) # Changes text box content to string oreOutput.
+                        self.oreBox.SetValue(oreOutput)  # Changes text box content to string oreOutput.
 
-
-                    if salvage: # Build a string to output to the text box named salvage.
-                        salvageOutput = '' # Init String
+                    if salvage:  # Build a string to output to the text box named salvage.
+                        salvageOutput = ''  # Init String
                         pilot = ''
                         for entry in sorted(salvage, key=itemgetter(0)):
-                            if pilot == '': # This will be the first entry
+                            if pilot == '':  # This will be the first entry
                                 pilot = entry[0]
                                 salvageOutput = ('%s%s\n' % (salvageOutput, pilot))
-                            elif pilot != entry[0]: # All others will need a /n adding to space them out
+                            elif pilot != entry[0]:  # All others will need a /n adding to space them out
                                 pilot = entry[0]
                                 salvageOutput = ('%s\n%s\n' % (salvageOutput, pilot))
                             salvageOutput = ('%s%s x %s\n' % (salvageOutput, entry[2], entry[1]))
 
-                        self.salvageBox.SetValue(salvageOutput) # Changes text box content to string salvageOutput.
+                        self.salvageBox.SetValue(salvageOutput)  # Changes text box content to string salvageOutput.
 
-
-                    if other: # Build a string to output to the text box named other.
-                        otherOutput = '' # Init String
+                    if other:  # Build a string to output to the text box named other.
+                        otherOutput = ''  # Init String
                         pilot = ''
                         for entry in sorted(other, key=itemgetter(0)):
-                            if pilot == '': # This will be the first entry
+                            if pilot == '':  # This will be the first entry
                                 pilot = entry[0]
                                 otherOutput = ('%s%s\n' % (otherOutput, pilot))
-                            elif pilot != entry[0]: # All others will need a /n adding to space them out
+                            elif pilot != entry[0]:  # All others will need a /n adding to space them out
                                 pilot = entry[0]
                                 otherOutput = ('%s\n%s\n' % (otherOutput, pilot))
                             otherOutput = ('%s%s x %s\n' % (otherOutput, entry[2], entry[1]))
 
-                        self.otherBox.SetValue(otherOutput) # Changes text box content to string otherOutput.
+                        self.otherBox.SetValue(otherOutput)  # Changes text box content to string otherOutput.
 
-                self.statusbar.SetBackgroundColour(wx.NullColour) # Resets to system default if changed by file check.
+                self.statusbar.SetBackgroundColour(wx.NullColour)  # Resets to system default if changed by file check.
                 self.statusbar.SetStatusText(self.filename)
 
         dlg.Destroy()
