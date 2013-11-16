@@ -1,4 +1,5 @@
-Nova Echo Mining Assistant
+NESI - Nova Echo Mining Assistant
+=====
 
 The goal of this project it to produce an application to interpret the output of fleet logs produced by the game "Eve Online" by CCP Games, into something more usable by mining directors and production managers.
 This orginally started out as a command line python script for my personal use. But as I have had some requests to make it a bit more user friendly, a GUI seemed a good place to start.
