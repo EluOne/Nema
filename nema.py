@@ -110,10 +110,43 @@ class MainWindow(wx.Frame):
         mainSizer.Layout()
 
     def OnAbout(self, e):
-        # A message dialog box with an OK button. wx.OK is a standard ID in wxWidgets.
-        dlg = wx.MessageDialog(self, 'Nova Echo Mining Assistant', 'About Nema', wx.OK | wx.ICON_INFORMATION)
-        dlg.ShowModal()  # Show it
-        dlg.Destroy()  # finally destroy it when finished.
+        description = """A tool designed initially for our corporate industrialists to
+enable them analyse their fleet logs out of game.
+
+If you like my work please consider an ISK donation to Elusive One.
+
+All EVE-Online related materials are property of CCP hf."""
+
+        licence = """NEMA is released under GNU GPLv3:
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>."""
+
+        info = wx.AboutDialogInfo()
+
+        #info.SetIcon(wx.Icon('', wx.BITMAP_TYPE_PNG))
+        info.SetName('Nova Echo Mining Assistant')
+        info.SetVersion('1.0.1')
+        info.SetDescription(description)
+        #info.SetCopyright('(C) 2013 Tim Cumming')
+        info.SetWebSite('https://github.com/EluOne/Nema')
+        info.SetLicence(licence)
+        info.AddDeveloper('Tim Cumming aka Elusive One')
+        #info.AddDocWriter('')
+        #info.AddArtist('')
+        #info.AddTranslator('')
+
+        wx.AboutBox(info)
 
     def OnOpen(self, e):
         # Open a file
