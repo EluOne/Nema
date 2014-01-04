@@ -152,7 +152,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>."""
         # Open a file
         self.dirname = ''
 
-        compact = bool(True)
+        compact = bool(False)
 
         #Initialise lists
         oreGroups = []
