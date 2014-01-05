@@ -36,6 +36,18 @@ orePilots = []
 oreTotals = []
 iceTotals = []
 
+oreMined = {}
+
+# These are the expected column headers from the first row of the data file
+columns = {'Time', 'Character', 'Item Type', 'Quantity', 'Item Group'}
+
+# EVE ore and ice volumes per unit as a dictionary
+OreTypes = {'Arkonor': 16, 'Bistot': 16, 'Crokite': 16, 'Dark Ochre': 8,
+    'Gneiss': 5, 'Hedbergite': 3, 'Hemorphite': 3, 'Jaspet': 2,
+    'Kernite': 1.2, 'Mercoxit': 40, 'Omber': 0.6, 'Plagioclase': 0.35,
+    'Pyroxeres': 0.3, 'Scordite': 0.15, 'Spodumain': 16, 'Veldspar': 0.1}
+IceTypes = {'Blue Ice': 1000, 'White Glaze': 1000, 'Glacial Mass': 1000, 'Clear Icicle': 1000}
+
 
 class MainWindow(wx.Frame):
     def __init__(self, parent, title):
@@ -57,6 +69,13 @@ class MainWindow(wx.Frame):
         self.lblIce = wx.StaticText(panel, label="Ice:")
         self.iceBox = wx.TextCtrl(panel, style=wx.TE_MULTILINE, size=(-1, -1))
         self.iceBox.SetFont(wx.Font(9, wx.FONTFAMILY_DEFAULT,
+                                                   wx.FONTSTYLE_NORMAL,
+                                                   wx.FONTWEIGHT_NORMAL,
+                                                   False))
+
+        self.lblTotals = wx.StaticText(panel, label="Totals:")
+        self.totalsBox = wx.TextCtrl(panel, style=wx.TE_MULTILINE, size=(-1, -1))
+        self.totalsBox.SetFont(wx.Font(9, wx.FONTFAMILY_DEFAULT,
                                                    wx.FONTSTYLE_NORMAL,
                                                    wx.FONTWEIGHT_NORMAL,
                                                    False))
@@ -97,35 +116,35 @@ class MainWindow(wx.Frame):
         # Use some sizers to see layout options
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         oreSizer = wx.BoxSizer(wx.VERTICAL)
-        iceSizer = wx.BoxSizer(wx.VERTICAL)
+#        iceSizer = wx.BoxSizer(wx.VERTICAL)
+        totalSizer = wx.BoxSizer(wx.VERTICAL)
         salvageSizer = wx.BoxSizer(wx.VERTICAL)
-        otherSizer = wx.BoxSizer(wx.VERTICAL)
         panel.SetSizer(sizer)
 
         oreSizer.Add(self.lblOre, 0, wx.EXPAND | wx.ALL, 1)
         oreSizer.Add(self.oreBox, 1, wx.EXPAND | wx.ALL, 1)
+        oreSizer.Add(self.lblIce, 0, wx.EXPAND | wx.ALL, 1)
+        oreSizer.Add(self.iceBox, 1, wx.EXPAND | wx.ALL, 1)
 
-        iceSizer.Add(self.lblIce, 0, wx.EXPAND | wx.ALL, 1)
-        iceSizer.Add(self.iceBox, 1, wx.EXPAND | wx.ALL, 1)
+#        iceSizer.Add(self.lblIce, 0, wx.EXPAND | wx.ALL, 1)
+#        iceSizer.Add(self.iceBox, 1, wx.EXPAND | wx.ALL, 1)
+        totalSizer.Add(self.lblTotals, 0, wx.EXPAND | wx.ALL, 1)
+        totalSizer.Add(self.totalsBox, 1, wx.EXPAND | wx.ALL, 1)
 
         salvageSizer.Add(self.lblSalvage, 0, wx.EXPAND | wx.ALL, 1)
         salvageSizer.Add(self.salvageBox, 1, wx.EXPAND | wx.ALL, 1)
         salvageSizer.Add(self.lblOther, 0, wx.EXPAND | wx.ALL, 1)
         salvageSizer.Add(self.otherBox, 1, wx.EXPAND | wx.ALL, 1)
 
-#        otherSizer.Add(self.lblOther, 0, wx.EXPAND | wx.ALL, 1)
-#        otherSizer.Add(self.otherBox, 1, wx.EXPAND | wx.ALL, 1)
-
         sizer.Add(oreSizer, 1, wx.EXPAND | wx.ALL, 1)
-        sizer.Add(iceSizer, 1, wx.EXPAND | wx.ALL, 1)
+#        sizer.Add(iceSizer, 1, wx.EXPAND | wx.ALL, 1)
+        sizer.Add(totalSizer, 1, wx.EXPAND | wx.ALL, 1)
         sizer.Add(salvageSizer, 1, wx.EXPAND | wx.ALL, 1)
-#        sizer.Add(otherSizer, 1, wx.EXPAND | wx.ALL, 1)
 
         mainSizer = wx.BoxSizer(wx.VERTICAL)
         mainSizer.Add(panel, 1, wx.EXPAND)
         self.SetSizer(mainSizer)
         mainSizer.Layout()
-
 
     def processLog(self):
         global oreGroups
@@ -140,6 +159,9 @@ class MainWindow(wx.Frame):
         global oreTotals
         global iceTotals
 
+        global oreMined
+
+        # Output: [0] Character, [1] ItemType, [2] Quantity, [3] ItemGroup, [4] Volume
         if compact is True:
             # Compact Mode:
             # Process the list of ore mined for duplicate type entries, and add them together. This produces a list that only details the ore group.
@@ -147,6 +169,11 @@ class MainWindow(wx.Frame):
             numItems = range(len(oreGroups))
 
             for item in numItems:
+                if (oreGroups[item][3]) in oreMined:
+                    oreMined[oreGroups[item][3]] = int(oreMined[oreGroups[item][3]]) + int(oreGroups[item][2])
+                else:
+                    oreMined[oreGroups[item][3]] = oreGroups[item][2]
+
                 if item > 0:
                     previous = item - 1
                     if (oreGroups[item][0] == oreGroups[previous][0]) and (oreGroups[item][3] == oreGroups[previous][3]):
@@ -164,6 +191,11 @@ class MainWindow(wx.Frame):
             numItems = range(len(oreGroups))
 
             for item in numItems:
+                if (oreGroups[item][1]) in oreMined:
+                    oreMined[oreGroups[item][1]] = int(oreMined[oreGroups[item][1]]) + int(oreGroups[item][2])
+                else:
+                    oreMined[oreGroups[item][1]] = oreGroups[item][2]
+
                 if item > 0:
                     previous = item - 1
                     if (oreGroups[item][0] == oreGroups[previous][0]) and (oreGroups[item][1] == oreGroups[previous][1]):
@@ -209,6 +241,7 @@ class MainWindow(wx.Frame):
                 other.remove(e)
 
         if ice or oreGroups or salvage or other:
+            totalsOutput = ''  # Init String
             if ice:  # Build a string to output to the text box named ice.
                 totalIce = 0
                 for entry in ice:
@@ -226,15 +259,17 @@ class MainWindow(wx.Frame):
                                 iceOutput = ('%s%s x %s = %s m3\n' % (iceOutput, entry[2], entry[1], entry[4]))
                             pilotIce = entry[4] + pilotIce
                     iceTotals.append([name, pilotIce, ((float(pilotIce) / float(totalIce)) * 100)])
+                    iceOutput = iceOutput + '\n'
 
                 iceTotals = sorted(iceTotals, key=itemgetter(2), reverse=True)
-                iceOutput = ('%s\nPercentage of Ore: (%s) m3\n\n' % (iceOutput, totalIce))
+                totalsOutput = ('%sPercentage of Ice: (%s) m3\n\n' % (totalsOutput, totalIce))
 
                 iceRange = range(len(iceTotals))  # Remove calc from loop below.
                 for entry in iceRange:
                     if iceTotals[(entry)][1] > 0:
-                        iceOutput = ('%s%.2f%% %s: %s m3\n' % (iceOutput, (iceTotals[(entry)][2]), iceTotals[(entry)][0], iceTotals[(entry)][1]))
+                        totalsOutput = ('%s%.2f%% %s: %s m3\n' % (totalsOutput, (iceTotals[(entry)][2]), iceTotals[(entry)][0], iceTotals[(entry)][1]))
 
+                totalsOutput = ('%s\n' % (totalsOutput))
                 self.iceBox.SetValue(iceOutput)  # Changes text box content to string iceOutput.
 
             if oreGroups:  # Build a string to output to the text box named ore.
@@ -256,14 +291,19 @@ class MainWindow(wx.Frame):
                     oreTotals.append([name, pilotOre, ((float(pilotOre) / float(totalOre)) * 100)])
                     oreOutput = oreOutput + '\n'
 
+                for key in oreMined:
+                    totalsOutput = ('%s%s x %s\n' % (totalsOutput, key, oreMined[key]))
+                totalsOutput = ('%s\n' % (totalsOutput))
+
                 oreTotals = sorted(oreTotals, key=itemgetter(2), reverse=True)
-                oreOutput = ('%s\nPercentage of Ore: (%.2f) m3\n\n' % (oreOutput, totalOre))
+                totalsOutput = ('%sPercentage of Ore: (%.2f) m3\n\n' % (totalsOutput, totalOre))
 
                 oreRange = range(len(oreTotals))  # Remove calc from loop below.
                 for entry in oreRange:
                     if oreTotals[(entry)][1] > 0:
-                        oreOutput = ('%s%.2f%% %s: %.2f m3\n' % (oreOutput, (oreTotals[(entry)][2]), oreTotals[(entry)][0], oreTotals[(entry)][1]))
+                        totalsOutput = ('%s%.2f%% %s: %.2f m3\n' % (totalsOutput, (oreTotals[(entry)][2]), oreTotals[(entry)][0], oreTotals[(entry)][1]))
 
+                totalsOutput = ('%s\n' % (totalsOutput))
                 self.oreBox.SetValue(oreOutput)  # Changes text box content to string oreOutput.
 
             if salvage:  # Build a string to output to the text box named salvage.
@@ -294,6 +334,8 @@ class MainWindow(wx.Frame):
 
                 self.otherBox.SetValue(otherOutput)  # Changes text box content to string otherOutput.
 
+        self.totalsBox.SetValue(totalsOutput)
+
         self.statusbar.SetBackgroundColour(wx.NullColour)  # Resets to system default if changed by file check.
         self.statusbar.SetStatusText(self.filename)
 
@@ -310,16 +352,6 @@ class MainWindow(wx.Frame):
         global pilots
         global icePilots
         global orePilots
-
-        # These are the expected column headers from the first row of the data file
-        columns = {'Time', 'Character', 'Item Type', 'Quantity', 'Item Group'}
-
-        # EVE ore and ice volumes per unit as a dictionary
-        OreTypes = {'Arkonor': 16, 'Bistot': 16, 'Crokite': 16, 'Dark Ochre': 8,
-            'Gneiss': 5, 'Hedbergite': 3, 'Hemorphite': 3, 'Jaspet': 2,
-            'Kernite': 1.2, 'Mercoxit': 40, 'Omber': 0.6, 'Plagioclase': 0.35,
-            'Pyroxeres': 0.3, 'Scordite': 0.15, 'Spodumain': 16, 'Veldspar': 0.1}
-        IceTypes = {'Blue Ice': 1000, 'White Glaze': 1000, 'Glacial Mass': 1000, 'Clear Icicle': 1000}
 
         dlg = wx.FileDialog(self, "Choose a log file", self.dirname, "", "*.txt", wx.OPEN)
         if dlg.ShowModal() == wx.ID_OK:
