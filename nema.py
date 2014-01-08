@@ -21,6 +21,7 @@
 import wx
 from operator import itemgetter
 
+# This needs connecting to the ui soon.
 compact = bool(False)
 
 #Initialise lists
@@ -33,11 +34,6 @@ pilots = []
 icePilots = []
 orePilots = []
 
-oreTotals = []
-iceTotals = []
-
-oreMined = {}
-
 # These are the expected column headers from the first row of the data file
 columns = {'Time', 'Character', 'Item Type', 'Quantity', 'Item Group'}
 
@@ -47,6 +43,24 @@ OreTypes = {'Arkonor': 16, 'Bistot': 16, 'Crokite': 16, 'Dark Ochre': 8,
     'Kernite': 1.2, 'Mercoxit': 40, 'Omber': 0.6, 'Plagioclase': 0.35,
     'Pyroxeres': 0.3, 'Scordite': 0.15, 'Spodumain': 16, 'Veldspar': 0.1}
 IceTypes = {'Blue Ice': 1000, 'White Glaze': 1000, 'Glacial Mass': 1000, 'Clear Icicle': 1000}
+
+# Refined outputs: [0]Mineral Name, [1]Batch, [2]Tri, [3]Pye, [4]Mex, [5]Iso, [6]Noc, [7]Zyd, [8]Meg, [9]Mor
+OreOutput = [['Arkonor', 200, 300, 0, 0, 0, 0, 166, 333, 0],
+             ['Bistot', 200, 0, 170, 0, 0, 0, 341, 170, 0],
+             ['Crokite', 250, 331, 0, 0, 0, 331, 663, 0, 0],
+             ['Dark Ochre', 400, 250, 0, 0, 0, 500, 250, 0, 0],
+             ['Gneiss', 400, 171, 0, 171, 343, 0, 171, 0, 0],
+             ['Hedbergite', 500, 0, 0, 0, 708, 354, 32, 0, 0],
+             ['Hemorphite', 500, 212, 0, 0, 212, 424, 28, 0, 0],
+             ['Jaspet', 500, 259, 259, 518, 0, 259, 8, 0, 0],
+             ['Kernite', 400, 386, 0, 773, 386, 0, 0, 0, 0],
+             ['Mercoxit', 250, 0, 0, 0, 0, 0, 0, 0, 530],
+             ['Omber', 500, 307, 123, 0, 307, 0, 0, 0, 0],
+             ['Plagioclase', 333, 256, 512, 256, 0, 0, 0, 0, 0],
+             ['Pyroxeres', 333, 844, 59, 120, 0, 11, 0, 0, 0],
+             ['Scordite', 333, 833, 416, 0, 0, 0, 0, 0, 0, 0],
+             ['Spodumain', 250, 700, 140, 0, 0, 0, 0, 140, 0],
+             ['Veldspar', 300, 1000, 0, 0, 0, 0, 0, 0, 0]]
 
 
 def fetchData(logContent):
@@ -101,6 +115,195 @@ def fetchData(logContent):
                 # Everything else
                 else:
                     other.append([data[1], data[2], data[3], data[4], 0])
+
+
+def processLog():
+    # This uses the data taken from the global variables.
+    global ore
+    global ice
+    global salvage
+    global other
+
+    global pilots
+    global icePilots
+    global orePilots
+
+    oreTotals = []
+    iceTotals = []
+
+    oreMined = {}
+
+    # Output: [0] Character, [1] ItemType, [2] Quantity, [3] ItemGroup, [4] Volume
+    if compact is True:
+        # Compact Mode:
+        # Process the list of ore mined for duplicate type entries, and add them together. This produces a list that only details the ore group.
+        ore = sorted(ore, key=itemgetter(0, 3))
+        numItems = range(len(ore))
+
+        for item in numItems:
+            if (ore[item][3]) in oreMined:
+                oreMined[ore[item][3]] = int(oreMined[ore[item][3]]) + int(ore[item][2])
+            else:
+                oreMined[ore[item][3]] = ore[item][2]
+
+            if item > 0:
+                previous = item - 1
+                if (ore[item][0] == ore[previous][0]) and (ore[item][3] == ore[previous][3]):
+                    newQuantity = (int(ore[item][2]) + int(ore[previous][2]))
+                    newVolume = (OreTypes[ore[item][3]] * int(newQuantity))
+                    ore[item] = [ore[item][0], ore[item][3], newQuantity, ore[item][3], newVolume]
+                    ore[previous] = 'deleted'
+
+        for o in ore[:]:
+            if o == 'deleted':
+                ore.remove(o)
+    else:
+        # Process the list of ore mined for duplicate entries, and add them together.
+        ore = sorted(ore, key=itemgetter(0, 1))
+        numItems = range(len(ore))
+
+        for item in numItems:
+            if (ore[item][1]) in oreMined:
+                oreMined[ore[item][1]] = int(oreMined[ore[item][1]]) + int(ore[item][2])
+            else:
+                oreMined[ore[item][1]] = ore[item][2]
+
+            if item > 0:
+                previous = item - 1
+                if (ore[item][0] == ore[previous][0]) and (ore[item][1] == ore[previous][1]):
+                    newQuantity = (int(ore[item][2]) + int(ore[previous][2]))
+                    newVolume = (OreTypes[ore[item][3]] * int(newQuantity))
+                    ore[item] = [ore[item][0], ore[item][1], newQuantity, ore[item][3], newVolume]
+                    ore[previous] = 'deleted'
+
+        for o in ore[:]:
+            if o == 'deleted':
+                ore.remove(o)
+
+    # Process the list of salvaged items for duplicate entries, and add them together.
+    salvage = sorted(salvage, key=itemgetter(0, 1))
+    numItems = range(len(salvage))
+
+    for item in numItems:
+        if item > 0:
+            previous = item - 1
+            if (salvage[item][0] == salvage[previous][0]) and (salvage[item][1] == salvage[previous][1]):
+                newQuantity = (int(salvage[item][2]) + int(salvage[previous][2]))
+                salvage[item] = [salvage[item][0], salvage[item][1], newQuantity, 0]
+                salvage[previous] = 'deleted'
+
+    for s in salvage[:]:
+        if s == 'deleted':
+            salvage.remove(s)
+
+    # Process the list of other items for duplicate entries, and add them together.
+    other = sorted(other, key=itemgetter(0, 1))
+    numItems = range(len(other))
+
+    for item in numItems:
+        if item > 0:
+            previous = item - 1
+            if (other[item][0] == other[previous][0]) and (other[item][1] == other[previous][1]):
+                newQuantity = (int(other[item][2]) + int(other[previous][2]))
+                other[item] = [other[item][0], other[item][1], newQuantity, 0]
+                other[previous] = 'deleted'
+
+    for e in other[:]:
+        if e == 'deleted':
+            other.remove(e)
+
+    if ice or ore or salvage or other:
+        totalsOutput = ''  # Init String
+        iceOutput = ''  # Init String
+        oreOutput = ''  # Init String
+        salvageOutput = ''  # Init String
+        otherOutput = ''  # Init String
+
+        if ice:  # Build a string to output to the text box named ice.
+            totalIce = 0
+            for entry in ice:
+                totalIce = entry[4] + totalIce
+
+            for name in sorted(icePilots):
+                pilotIce = 0
+                iceOutput = ('%s%s\n' % (iceOutput, name))
+                for entry in sorted(ice, key=itemgetter(0, 3)):
+                    if name == entry[0]:
+                        if compact is True:
+                            iceOutput = ('%s%s x %s = %s m3\n' % (iceOutput, entry[2], entry[3], entry[4]))
+                        else:
+                            iceOutput = ('%s%s x %s = %s m3\n' % (iceOutput, entry[2], entry[1], entry[4]))
+                        pilotIce = entry[4] + pilotIce
+                iceTotals.append([name, pilotIce, ((float(pilotIce) / float(totalIce)) * 100)])
+                iceOutput = iceOutput + '\n'
+
+            iceTotals = sorted(iceTotals, key=itemgetter(2), reverse=True)
+            totalsOutput = ('%sPercentage of Ice: (%s) m3\n\n' % (totalsOutput, totalIce))
+
+            iceRange = range(len(iceTotals))  # Remove calc from loop below.
+            for entry in iceRange:
+                if iceTotals[(entry)][1] > 0:
+                    totalsOutput = ('%s%.2f%% %s: %s m3\n' % (totalsOutput, (iceTotals[(entry)][2]), iceTotals[(entry)][0], iceTotals[(entry)][1]))
+
+            totalsOutput = ('%s\n' % (totalsOutput))
+
+        if ore:  # Build a string to output to the text box named ore.
+            totalOre = 0
+            for entry in ore:
+                totalOre = entry[4] + totalOre
+
+            for name in sorted(orePilots):
+                pilotOre = 0
+                oreOutput = ('%s%s\n' % (oreOutput, name))
+                for entry in sorted(ore, key=itemgetter(0, 3)):
+                    if name == entry[0]:
+                        if compact is True:
+                            oreOutput = ('%s%s x %s = %.2f m3\n' % (oreOutput, entry[2], entry[3], entry[4]))
+                        else:
+                            oreOutput = ('%s%s x %s = %.2f m3\n' % (oreOutput, entry[2], entry[1], entry[4]))
+                        pilotOre = entry[4] + pilotOre
+                oreTotals.append([name, pilotOre, ((float(pilotOre) / float(totalOre)) * 100)])
+                oreOutput = oreOutput + '\n'
+
+            totalsOutput = ('%sUnits of Ore:\n\n' % (totalsOutput))
+
+            for key in oreMined:
+                totalsOutput = ('%s%s x %s\n' % (totalsOutput, key, oreMined[key]))
+            totalsOutput = ('%s\n' % (totalsOutput))
+
+            oreTotals = sorted(oreTotals, key=itemgetter(2), reverse=True)
+            totalsOutput = ('%sPercentage of Ore: (%.2f) m3\n\n' % (totalsOutput, totalOre))
+
+            oreRange = range(len(oreTotals))  # Remove calc from loop below.
+            for entry in oreRange:
+                if oreTotals[(entry)][1] > 0:
+                    totalsOutput = ('%s%.2f%% %s: %.2f m3\n' % (totalsOutput, (oreTotals[(entry)][2]), oreTotals[(entry)][0], oreTotals[(entry)][1]))
+
+            totalsOutput = ('%s\n' % (totalsOutput))
+
+        if salvage:  # Build a string to output to the text box named salvage.
+            pilot = ''
+            for entry in sorted(salvage, key=itemgetter(0)):
+                if pilot == '':  # This will be the first entry
+                    pilot = entry[0]
+                    salvageOutput = ('%s%s\n' % (salvageOutput, pilot))
+                elif pilot != entry[0]:  # All others will need a /n adding to space them out
+                    pilot = entry[0]
+                    salvageOutput = ('%s\n%s\n' % (salvageOutput, pilot))
+                salvageOutput = ('%s%s x %s\n' % (salvageOutput, entry[2], entry[1]))
+
+        if other:  # Build a string to output to the text box named other.
+            pilot = ''
+            for entry in sorted(other, key=itemgetter(0)):
+                if pilot == '':  # This will be the first entry
+                    pilot = entry[0]
+                    otherOutput = ('%s%s\n' % (otherOutput, pilot))
+                elif pilot != entry[0]:  # All others will need a /n adding to space them out
+                    pilot = entry[0]
+                    otherOutput = ('%s\n%s\n' % (otherOutput, pilot))
+                otherOutput = ('%s%s x %s\n' % (otherOutput, entry[2], entry[1]))
+
+    return iceOutput, oreOutput, salvageOutput, otherOutput, totalsOutput
 
 
 class MainWindow(wx.Frame):
@@ -200,205 +403,6 @@ class MainWindow(wx.Frame):
         self.SetSizer(mainSizer)
         mainSizer.Layout()
 
-    def processLog(self):
-        # This will need moving out of the MainWindow class.
-        global ore
-        global ice
-        global salvage
-        global other
-
-        global pilots
-        global icePilots
-        global orePilots
-
-        global oreTotals
-        global iceTotals
-
-        global oreMined
-
-        oreTotals = []
-        iceTotals = []
-
-        oreMined = {}
-
-        # Output: [0] Character, [1] ItemType, [2] Quantity, [3] ItemGroup, [4] Volume
-        if compact is True:
-            # Compact Mode:
-            # Process the list of ore mined for duplicate type entries, and add them together. This produces a list that only details the ore group.
-            ore = sorted(ore, key=itemgetter(0, 3))
-            numItems = range(len(ore))
-
-            for item in numItems:
-                if (ore[item][3]) in oreMined:
-                    oreMined[ore[item][3]] = int(oreMined[ore[item][3]]) + int(ore[item][2])
-                else:
-                    oreMined[ore[item][3]] = ore[item][2]
-
-                if item > 0:
-                    previous = item - 1
-                    if (ore[item][0] == ore[previous][0]) and (ore[item][3] == ore[previous][3]):
-                        newQuantity = (int(ore[item][2]) + int(ore[previous][2]))
-                        newVolume = (OreTypes[ore[item][3]] * int(newQuantity))
-                        ore[item] = [ore[item][0], ore[item][3], newQuantity, ore[item][3], newVolume]
-                        ore[previous] = 'deleted'
-
-            for o in ore[:]:
-                if o == 'deleted':
-                    ore.remove(o)
-        else:
-            # Process the list of ore mined for duplicate entries, and add them together.
-            ore = sorted(ore, key=itemgetter(0, 1))
-            numItems = range(len(ore))
-
-            for item in numItems:
-                if (ore[item][1]) in oreMined:
-                    oreMined[ore[item][1]] = int(oreMined[ore[item][1]]) + int(ore[item][2])
-                else:
-                    oreMined[ore[item][1]] = ore[item][2]
-
-                if item > 0:
-                    previous = item - 1
-                    if (ore[item][0] == ore[previous][0]) and (ore[item][1] == ore[previous][1]):
-                        newQuantity = (int(ore[item][2]) + int(ore[previous][2]))
-                        newVolume = (OreTypes[ore[item][3]] * int(newQuantity))
-                        ore[item] = [ore[item][0], ore[item][1], newQuantity, ore[item][3], newVolume]
-                        ore[previous] = 'deleted'
-
-            for o in ore[:]:
-                if o == 'deleted':
-                    ore.remove(o)
-
-        # Process the list of salvaged items for duplicate entries, and add them together.
-        salvage = sorted(salvage, key=itemgetter(0, 1))
-        numItems = range(len(salvage))
-
-        for item in numItems:
-            if item > 0:
-                previous = item - 1
-                if (salvage[item][0] == salvage[previous][0]) and (salvage[item][1] == salvage[previous][1]):
-                    newQuantity = (int(salvage[item][2]) + int(salvage[previous][2]))
-                    salvage[item] = [salvage[item][0], salvage[item][1], newQuantity, 0]
-                    salvage[previous] = 'deleted'
-
-        for s in salvage[:]:
-            if s == 'deleted':
-                salvage.remove(s)
-
-        # Process the list of other items for duplicate entries, and add them together.
-        other = sorted(other, key=itemgetter(0, 1))
-        numItems = range(len(other))
-
-        for item in numItems:
-            if item > 0:
-                previous = item - 1
-                if (other[item][0] == other[previous][0]) and (other[item][1] == other[previous][1]):
-                    newQuantity = (int(other[item][2]) + int(other[previous][2]))
-                    other[item] = [other[item][0], other[item][1], newQuantity, 0]
-                    other[previous] = 'deleted'
-
-        for e in other[:]:
-            if e == 'deleted':
-                other.remove(e)
-
-        if ice or ore or salvage or other:
-            totalsOutput = ''  # Init String
-            if ice:  # Build a string to output to the text box named ice.
-                totalIce = 0
-                for entry in ice:
-                    totalIce = entry[4] + totalIce
-
-                iceOutput = ''  # Init String
-                for name in sorted(icePilots):
-                    pilotIce = 0
-                    iceOutput = ('%s%s\n' % (iceOutput, name))
-                    for entry in sorted(ice, key=itemgetter(0, 3)):
-                        if name == entry[0]:
-                            if compact is True:
-                                iceOutput = ('%s%s x %s = %s m3\n' % (iceOutput, entry[2], entry[3], entry[4]))
-                            else:
-                                iceOutput = ('%s%s x %s = %s m3\n' % (iceOutput, entry[2], entry[1], entry[4]))
-                            pilotIce = entry[4] + pilotIce
-                    iceTotals.append([name, pilotIce, ((float(pilotIce) / float(totalIce)) * 100)])
-                    iceOutput = iceOutput + '\n'
-
-                iceTotals = sorted(iceTotals, key=itemgetter(2), reverse=True)
-                totalsOutput = ('%sPercentage of Ice: (%s) m3\n\n' % (totalsOutput, totalIce))
-
-                iceRange = range(len(iceTotals))  # Remove calc from loop below.
-                for entry in iceRange:
-                    if iceTotals[(entry)][1] > 0:
-                        totalsOutput = ('%s%.2f%% %s: %s m3\n' % (totalsOutput, (iceTotals[(entry)][2]), iceTotals[(entry)][0], iceTotals[(entry)][1]))
-
-                totalsOutput = ('%s\n' % (totalsOutput))
-                self.iceBox.SetValue(iceOutput)  # Changes text box content to string iceOutput.
-
-            if ore:  # Build a string to output to the text box named ore.
-                totalOre = 0
-                for entry in ore:
-                    totalOre = entry[4] + totalOre
-
-                oreOutput = ''  # Init String
-                for name in sorted(orePilots):
-                    pilotOre = 0
-                    oreOutput = ('%s%s\n' % (oreOutput, name))
-                    for entry in sorted(ore, key=itemgetter(0, 3)):
-                        if name == entry[0]:
-                            if compact is True:
-                                oreOutput = ('%s%s x %s = %.2f m3\n' % (oreOutput, entry[2], entry[3], entry[4]))
-                            else:
-                                oreOutput = ('%s%s x %s = %.2f m3\n' % (oreOutput, entry[2], entry[1], entry[4]))
-                            pilotOre = entry[4] + pilotOre
-                    oreTotals.append([name, pilotOre, ((float(pilotOre) / float(totalOre)) * 100)])
-                    oreOutput = oreOutput + '\n'
-
-                for key in oreMined:
-                    totalsOutput = ('%s%s x %s\n' % (totalsOutput, key, oreMined[key]))
-                totalsOutput = ('%s\n' % (totalsOutput))
-
-                oreTotals = sorted(oreTotals, key=itemgetter(2), reverse=True)
-                totalsOutput = ('%sPercentage of Ore: (%.2f) m3\n\n' % (totalsOutput, totalOre))
-
-                oreRange = range(len(oreTotals))  # Remove calc from loop below.
-                for entry in oreRange:
-                    if oreTotals[(entry)][1] > 0:
-                        totalsOutput = ('%s%.2f%% %s: %.2f m3\n' % (totalsOutput, (oreTotals[(entry)][2]), oreTotals[(entry)][0], oreTotals[(entry)][1]))
-
-                totalsOutput = ('%s\n' % (totalsOutput))
-                self.oreBox.SetValue(oreOutput)  # Changes text box content to string oreOutput.
-
-            if salvage:  # Build a string to output to the text box named salvage.
-                salvageOutput = ''  # Init String
-                pilot = ''
-                for entry in sorted(salvage, key=itemgetter(0)):
-                    if pilot == '':  # This will be the first entry
-                        pilot = entry[0]
-                        salvageOutput = ('%s%s\n' % (salvageOutput, pilot))
-                    elif pilot != entry[0]:  # All others will need a /n adding to space them out
-                        pilot = entry[0]
-                        salvageOutput = ('%s\n%s\n' % (salvageOutput, pilot))
-                    salvageOutput = ('%s%s x %s\n' % (salvageOutput, entry[2], entry[1]))
-
-                self.salvageBox.SetValue(salvageOutput)  # Changes text box content to string salvageOutput.
-
-            if other:  # Build a string to output to the text box named other.
-                otherOutput = ''  # Init String
-                pilot = ''
-                for entry in sorted(other, key=itemgetter(0)):
-                    if pilot == '':  # This will be the first entry
-                        pilot = entry[0]
-                        otherOutput = ('%s%s\n' % (otherOutput, pilot))
-                    elif pilot != entry[0]:  # All others will need a /n adding to space them out
-                        pilot = entry[0]
-                        otherOutput = ('%s\n%s\n' % (otherOutput, pilot))
-                    otherOutput = ('%s%s x %s\n' % (otherOutput, entry[2], entry[1]))
-
-                self.otherBox.SetValue(otherOutput)  # Changes text box content to string otherOutput.
-
-        self.totalsBox.SetValue(totalsOutput)
-
-        self.statusbar.SetBackgroundColour(wx.NullColour)  # Resets to system default if changed by file check.
-        self.statusbar.SetStatusText(self.filename)
-
     def OnOpen(self, e):
         # Open a file
         self.dirname = ''
@@ -424,8 +428,18 @@ class MainWindow(wx.Frame):
             if fileCheck == 'OK':
                 fetchData(content)
 
+                iceOutput, oreOutput, salvageOutput, otherOutput, totalsOutput = processLog()
+
+                self.iceBox.SetValue(iceOutput)  # Changes text box content to string iceOutput.
+                self.oreBox.SetValue(oreOutput)  # Changes text box content to string oreOutput.
+                self.salvageBox.SetValue(salvageOutput)  # Changes text box content to string salvageOutput.
+                self.otherBox.SetValue(otherOutput)  # Changes text box content to string otherOutput.
+                self.totalsBox.SetValue(totalsOutput)
+
+                self.statusbar.SetBackgroundColour(wx.NullColour)  # Resets to system default if changed by file check.
+                self.statusbar.SetStatusText(self.filename)
+
         dlg.Destroy()
-        self.processLog()
 
     def OnAbout(self, e):
         description = """A tool designed initially for our corporate industrialists to
