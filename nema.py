@@ -24,7 +24,7 @@ from operator import itemgetter
 compact = bool(False)
 
 #Initialise lists
-oreGroups = []
+ore = []
 ice = []
 salvage = []
 other = []
@@ -47,6 +47,60 @@ OreTypes = {'Arkonor': 16, 'Bistot': 16, 'Crokite': 16, 'Dark Ochre': 8,
     'Kernite': 1.2, 'Mercoxit': 40, 'Omber': 0.6, 'Plagioclase': 0.35,
     'Pyroxeres': 0.3, 'Scordite': 0.15, 'Spodumain': 16, 'Veldspar': 0.1}
 IceTypes = {'Blue Ice': 1000, 'White Glaze': 1000, 'Glacial Mass': 1000, 'Clear Icicle': 1000}
+
+
+def fetchData(logContent):
+    #Initialise globals lists
+    global ore
+    global ice
+    global salvage
+    global other
+
+    global pilots
+    global icePilots
+    global orePilots
+
+    #Initialise lists
+    ore = []
+    ice = []
+    salvage = []
+    other = []
+
+    pilots = []
+    icePilots = []
+    orePilots = []
+
+    numLines = range(len(logContent))
+
+    for lineNum in numLines:
+        # Process each line that was in the log file.
+        line = logContent[lineNum].rstrip('\r\n')
+
+        clean = line.strip()   # Removes newline characters
+        if len(clean) > 0:
+            data = clean.split('\t')   # Drops empty lines and outputs tuple
+            # Output: [0] Time, [1] Character, [2] ItemType, [3] Quantity, [4] ItemGroup
+
+            if data[0] != 'Time':   # Skip first line of log
+                if data[1] not in pilots:
+                    pilots.append(data[1])
+                # Split ore from other items
+                if data[4] in OreTypes:
+                    if data[1] not in orePilots:
+                        orePilots.append(data[1])
+                    volume = (OreTypes[(data[4])] * int(data[3]))
+                    ore.append([data[1], data[2], data[3], data[4], volume])
+                # Split ice from other items
+                elif data[4] == 'Ice':
+                    if data[1] not in icePilots:
+                        icePilots.append(data[1])
+                    volume = (IceTypes[(data[2])] * int(data[3]))
+                    ice.append([data[1], data[2], data[3], data[4], volume])
+                elif data[4] == 'Salvaged Materials':
+                    salvage.append([data[1], data[2], data[3], data[4], 0])
+                # Everything else
+                else:
+                    other.append([data[1], data[2], data[3], data[4], 0])
 
 
 class MainWindow(wx.Frame):
@@ -147,7 +201,8 @@ class MainWindow(wx.Frame):
         mainSizer.Layout()
 
     def processLog(self):
-        global oreGroups
+        # This will need moving out of the MainWindow class.
+        global ore
         global ice
         global salvage
         global other
@@ -161,52 +216,57 @@ class MainWindow(wx.Frame):
 
         global oreMined
 
+        oreTotals = []
+        iceTotals = []
+
+        oreMined = {}
+
         # Output: [0] Character, [1] ItemType, [2] Quantity, [3] ItemGroup, [4] Volume
         if compact is True:
             # Compact Mode:
             # Process the list of ore mined for duplicate type entries, and add them together. This produces a list that only details the ore group.
-            oreGroups = sorted(oreGroups, key=itemgetter(0, 3))
-            numItems = range(len(oreGroups))
+            ore = sorted(ore, key=itemgetter(0, 3))
+            numItems = range(len(ore))
 
             for item in numItems:
-                if (oreGroups[item][3]) in oreMined:
-                    oreMined[oreGroups[item][3]] = int(oreMined[oreGroups[item][3]]) + int(oreGroups[item][2])
+                if (ore[item][3]) in oreMined:
+                    oreMined[ore[item][3]] = int(oreMined[ore[item][3]]) + int(ore[item][2])
                 else:
-                    oreMined[oreGroups[item][3]] = oreGroups[item][2]
+                    oreMined[ore[item][3]] = ore[item][2]
 
                 if item > 0:
                     previous = item - 1
-                    if (oreGroups[item][0] == oreGroups[previous][0]) and (oreGroups[item][3] == oreGroups[previous][3]):
-                        newQuantity = (int(oreGroups[item][2]) + int(oreGroups[previous][2]))
-                        newVolume = (OreTypes[oreGroups[item][3]] * int(newQuantity))
-                        oreGroups[item] = [oreGroups[item][0], oreGroups[item][3], newQuantity, oreGroups[item][3], newVolume]
-                        oreGroups[previous] = 'deleted'
+                    if (ore[item][0] == ore[previous][0]) and (ore[item][3] == ore[previous][3]):
+                        newQuantity = (int(ore[item][2]) + int(ore[previous][2]))
+                        newVolume = (OreTypes[ore[item][3]] * int(newQuantity))
+                        ore[item] = [ore[item][0], ore[item][3], newQuantity, ore[item][3], newVolume]
+                        ore[previous] = 'deleted'
 
-            for o in oreGroups[:]:
+            for o in ore[:]:
                 if o == 'deleted':
-                    oreGroups.remove(o)
+                    ore.remove(o)
         else:
             # Process the list of ore mined for duplicate entries, and add them together.
-            oreGroups = sorted(oreGroups, key=itemgetter(0, 1))
-            numItems = range(len(oreGroups))
+            ore = sorted(ore, key=itemgetter(0, 1))
+            numItems = range(len(ore))
 
             for item in numItems:
-                if (oreGroups[item][1]) in oreMined:
-                    oreMined[oreGroups[item][1]] = int(oreMined[oreGroups[item][1]]) + int(oreGroups[item][2])
+                if (ore[item][1]) in oreMined:
+                    oreMined[ore[item][1]] = int(oreMined[ore[item][1]]) + int(ore[item][2])
                 else:
-                    oreMined[oreGroups[item][1]] = oreGroups[item][2]
+                    oreMined[ore[item][1]] = ore[item][2]
 
                 if item > 0:
                     previous = item - 1
-                    if (oreGroups[item][0] == oreGroups[previous][0]) and (oreGroups[item][1] == oreGroups[previous][1]):
-                        newQuantity = (int(oreGroups[item][2]) + int(oreGroups[previous][2]))
-                        newVolume = (OreTypes[oreGroups[item][3]] * int(newQuantity))
-                        oreGroups[item] = [oreGroups[item][0], oreGroups[item][1], newQuantity, oreGroups[item][3], newVolume]
-                        oreGroups[previous] = 'deleted'
+                    if (ore[item][0] == ore[previous][0]) and (ore[item][1] == ore[previous][1]):
+                        newQuantity = (int(ore[item][2]) + int(ore[previous][2]))
+                        newVolume = (OreTypes[ore[item][3]] * int(newQuantity))
+                        ore[item] = [ore[item][0], ore[item][1], newQuantity, ore[item][3], newVolume]
+                        ore[previous] = 'deleted'
 
-            for o in oreGroups[:]:
+            for o in ore[:]:
                 if o == 'deleted':
-                    oreGroups.remove(o)
+                    ore.remove(o)
 
         # Process the list of salvaged items for duplicate entries, and add them together.
         salvage = sorted(salvage, key=itemgetter(0, 1))
@@ -240,7 +300,7 @@ class MainWindow(wx.Frame):
             if e == 'deleted':
                 other.remove(e)
 
-        if ice or oreGroups or salvage or other:
+        if ice or ore or salvage or other:
             totalsOutput = ''  # Init String
             if ice:  # Build a string to output to the text box named ice.
                 totalIce = 0
@@ -272,16 +332,16 @@ class MainWindow(wx.Frame):
                 totalsOutput = ('%s\n' % (totalsOutput))
                 self.iceBox.SetValue(iceOutput)  # Changes text box content to string iceOutput.
 
-            if oreGroups:  # Build a string to output to the text box named ore.
+            if ore:  # Build a string to output to the text box named ore.
                 totalOre = 0
-                for entry in oreGroups:
+                for entry in ore:
                     totalOre = entry[4] + totalOre
 
                 oreOutput = ''  # Init String
                 for name in sorted(orePilots):
                     pilotOre = 0
                     oreOutput = ('%s%s\n' % (oreOutput, name))
-                    for entry in sorted(oreGroups, key=itemgetter(0, 3)):
+                    for entry in sorted(ore, key=itemgetter(0, 3)):
                         if name == entry[0]:
                             if compact is True:
                                 oreOutput = ('%s%s x %s = %.2f m3\n' % (oreOutput, entry[2], entry[3], entry[4]))
@@ -343,16 +403,6 @@ class MainWindow(wx.Frame):
         # Open a file
         self.dirname = ''
 
-        #Initialise globals lists
-        global oreGroups
-        global ice
-        global salvage
-        global other
-
-        global pilots
-        global icePilots
-        global orePilots
-
         dlg = wx.FileDialog(self, "Choose a log file", self.dirname, "", "*.txt", wx.OPEN)
         if dlg.ShowModal() == wx.ID_OK:
             self.filename = dlg.GetFilename()
@@ -372,37 +422,7 @@ class MainWindow(wx.Frame):
                     fileCheck = 'FAILED'
 
             if fileCheck == 'OK':
-                numLines = range(len(content))
-
-                for lineNum in numLines:
-                    # Process each line that was in the log file.
-                    line = content[lineNum].rstrip('\r\n')
-
-                    clean = line.strip()   # Removes newline characters
-                    if len(clean) > 0:
-                        data = clean.split('\t')   # Drops empty lines and outputs tuple
-                        # Output: [0] Time, [1] Character, [2] ItemType, [3] Quantity, [4] ItemGroup
-
-                        if data[0] != 'Time':   # Skip first line of log
-                            if data[1] not in pilots:
-                                pilots.append(data[1])
-                            # Split ore from other items
-                            if data[4] in OreTypes:
-                                if data[1] not in orePilots:
-                                    orePilots.append(data[1])
-                                volume = (OreTypes[(data[4])] * int(data[3]))
-                                oreGroups.append([data[1], data[2], data[3], data[4], volume])
-                            # Split ice from other items
-                            elif data[4] == 'Ice':
-                                if data[1] not in icePilots:
-                                    icePilots.append(data[1])
-                                volume = (IceTypes[(data[2])] * int(data[3]))
-                                ice.append([data[1], data[2], data[3], data[4], volume])
-                            elif data[4] == 'Salvaged Materials':
-                                salvage.append([data[1], data[2], data[3], data[4], 0])
-                            # Everything else
-                            else:
-                                other.append([data[1], data[2], data[3], data[4], 0])
+                fetchData(content)
 
         dlg.Destroy()
         self.processLog()
