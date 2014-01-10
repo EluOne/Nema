@@ -122,16 +122,18 @@ def refineOre(oreMined):
     #for key in oreMined:
     numItems = range(len(OreOutput))
     numMinerals = range(2, 9)
+    mineralNames = {2: 'Tritanium', 3: 'Pyrite', 4: 'Mexallon', 5: 'Isogen', 6: 'Nocxium', 7: 'Zydrine', 8: 'Megacyte', 9: 'Morphite'}
 
     # Iterate over the ore types
     for item in numItems:
         # Refined outputs: [0]Mineral Name, [1]Batch, [2]Tri, [3]Pye, [4]Mex, [5]Iso, [6]Noc, [7]Zyd, [8]Meg, [9]Mor
         if (OreOutput[item][0]) in oreMined:
             batches = round(float(oreMined[OreOutput[item][0]]) / float(OreOutput[item][1]), 0)
-            print(batches)
+            print('%s x %s' % (OreOutput[item][0], batches))
             for x in numMinerals:
-                mineral = OreOutput[item][x] * batches
-                print(mineral)
+                if OreOutput[item][x] > 0:
+                    mineral = OreOutput[item][x] * batches
+                    print('    %s x %s' % (mineralNames[x], mineral))
 
 
 def processLog():
