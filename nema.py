@@ -117,6 +117,23 @@ def fetchData(logContent):
                     other.append([data[1], data[2], data[3], data[4], 0])
 
 
+def refineOre(oreMined):
+    # TODO: Use the ore to mineral values to calculate mineral output
+    #for key in oreMined:
+    numItems = range(len(OreOutput))
+    numMinerals = range(2, 9)
+
+    # Iterate over the ore types
+    for item in numItems:
+        # Refined outputs: [0]Mineral Name, [1]Batch, [2]Tri, [3]Pye, [4]Mex, [5]Iso, [6]Noc, [7]Zyd, [8]Meg, [9]Mor
+        if (OreOutput[item][0]) in oreMined:
+            batches = round(float(oreMined[OreOutput[item][0]]) / float(OreOutput[item][1]), 0)
+            print(batches)
+            for x in numMinerals:
+                mineral = OreOutput[item][x] * batches
+                print(mineral)
+
+
 def processLog():
     # This uses the data taken from the global variables.
     global ore
@@ -270,6 +287,8 @@ def processLog():
             for key in oreMined:
                 totalsOutput = ('%s%s x %s\n' % (totalsOutput, key, oreMined[key]))
             totalsOutput = ('%s\n' % (totalsOutput))
+
+            refineOre(oreMined)
 
             oreTotals = sorted(oreTotals, key=itemgetter(2), reverse=True)
             totalsOutput = ('%sPercentage of Ore: (%.2f) m3\n\n' % (totalsOutput, totalOre))
