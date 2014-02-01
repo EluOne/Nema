@@ -18,8 +18,19 @@
 # Author: Tim Cumming aka Elusive One
 # Created: 05/03/13
 
+import math
+import urllib2
+import httplib
+import traceback
+
+import sqlite3 as lite
+import xml.etree.ElementTree as etree
+
 import wx
+from wx.lib.ticker import Ticker
 from operator import itemgetter
+
+from ObjectListView import ObjectListView, ColumnDefn, GroupListView
 
 # This needs connecting to the ui soon.
 compact = bool(False)
@@ -33,6 +44,18 @@ other = []
 pilots = []
 icePilots = []
 orePilots = []
+
+# System db id numbers
+systemNames = {30002659: 'Dodixie', 30000142: 'Jita'}
+# Mineral db id numbers
+mineralIDs = {34: 'Tritanium', 35: 'Pyerite', 36: 'Mexallon', 37: 'Isogen', 38: 'Nocxium', 39: 'Zydrine', 40: 'Megacyte', 11399: 'Morphite'}
+# Set the market prices from Eve Central will look like:
+# mineralBuy = {34: 4.65, 35: 11.14, 36: 43.82, 37: 120.03, 38: 706.93, 39: 727.19, 40: 1592.10}
+mineralBuy = {}
+mineralSell = {}
+
+itemBuy = {}
+itemSell = {}
 
 # These are the expected column headers from the first row of the data file
 columns = {'Time', 'Character', 'Item Type', 'Quantity', 'Item Group'}
@@ -61,6 +84,193 @@ OreOutput = [['Arkonor', 200, 300, 0, 0, 0, 0, 166, 333, 0],
              ['Scordite', 333, 833, 416, 0, 0, 0, 0, 0, 0, 0],
              ['Spodumain', 250, 700, 140, 0, 0, 0, 0, 140, 0],
              ['Veldspar', 300, 1000, 0, 0, 0, 0, 0, 0, 0]]
+
+
+class Salvage(object):
+    def __init__(self, itemID, itemName, itemBuyValue, itemSellValue, reprocessBuyValue, reprocessSellValue, action):
+        self.itemID = itemID
+        self.itemName = itemName
+        self.itemBuyValue = itemBuyValue
+        self.itemSellValue = itemSellValue
+        self.reprocessBuyValue = reprocessBuyValue
+        self.reprocessSellValue = reprocessSellValue
+        self.action = action
+
+
+def onError(error):
+    dlg = wx.MessageDialog(None, 'An error has occurred:\n' + error, '', wx.OK | wx.ICON_ERROR)
+    dlg.ShowModal()  # Show it
+    dlg.Destroy()  # finally destroy it when finished.
+#    print('An error has occurred:\n' + error, '\n')
+
+
+def id2name(idType, ids):  # Takes a list of IDs to query the local db or api server.
+    typeNames = {}
+    typePortions = {}
+    if idType == 'name':
+        # We'll use the local static DB for items as they don't change.
+        if ids != []:  # We have some ids we don't know.
+            try:
+                idList = ('", "'.join(map(str, ids[:])))
+                con = lite.connect('static.db')
+
+                with con:
+                    cur = con.cursor()
+                    statement = "SELECT typeID, typeName, portionSize FROM invtypes WHERE typeName IN (\"" + idList + "\")"
+                    cur.execute(statement)
+
+                    rows = cur.fetchall()
+
+                    # Use the item strings returned to populate the typeNames dictionary.
+                    for row in rows:
+                        typeNames.update({int(row[0]): str(row[1])})
+                        typePortions.update({int(row[0]): str(row[2])})
+                        ids.remove(row[1])
+
+                if ids != []:  # We have some ids we don't know.
+                    #numItems = range(len(ids))
+                    #for y in numItems:
+                    #    typeNames.update({str(ids[y]): str(ids[y])})
+                    error = ('Item not found in database: ' + str(ids))  # Error String
+                    onError(error)
+
+            except lite.Error as err:
+                error = ('SQL Lite Error: ' + str(err.args[0]) + str(err.args[1:]))  # Error String
+                #ids = idList.split("', '")
+                #numItems = range(len(ids))
+                #for y in numItems:
+                #    typeNames.update({str(ids[y]): str(ids[y])})
+                onError(error)
+            finally:
+                if con:
+                    con.close()
+    return typeNames, typePortions
+
+
+def fetchMinerals():
+    global mineralBuy
+    global mineralSell
+
+    # All base minerals from Dodi url:
+    # http://api.eve-central.com/api/marketstat?typeid=34&typeid=35&typeid=36&typeid=37&typeid=38&typeid=39&typeid=40&usesystem=30002659
+    apiURL = 'http://api.eve-central.com/api/marketstat?typeid=34&typeid=35&typeid=36&typeid=37&typeid=38&typeid=39&typeid=40&typeid=11399&usesystem=30002659'
+
+    try:  # Try to connect to the API server
+        target = urllib2.urlopen(apiURL)  # download the file
+        downloadedData = target.read()  # convert to string
+        target.close()  # close file because we don't need it anymore
+
+        tree = etree.fromstring(downloadedData)
+        types = tree.findall('.//type')
+
+        for child in types:
+            ids = child.attrib
+            buy = child.find('buy')
+            sell = child.find('sell')
+            if int(ids['id']) in mineralIDs:
+                mineralBuy[int(ids['id'])] = float(buy.find('max').text)
+                mineralSell[int(ids['id'])] = float(sell.find('min').text)
+    except urllib2.HTTPError as err:
+        error = ('HTTP Error: %s %s\n' % (str(err.code), str(err.reason)))  # Error String
+        onError(error)
+    except urllib2.URLError as err:
+        error = ('Error Connecting to Tranquility: ' + str(err.reason))  # Error String
+        onError(error)
+    except httplib.HTTPException as err:
+        error = ('HTTP Exception')  # Error String
+        onError(error)
+    except Exception:
+        error = ('Generic Exception: ' + traceback.format_exc())  # Error String
+        onError(error)
+
+
+def fetchItems(typeIDs):
+    global itemBuy
+    global itemSell
+
+    if typeIDs != []:
+        # Calculate the number of ids we have. We'll use a maximum of 100 IDs per query.
+        # So we'll need to split this into multiple queries.
+
+        numIDs = len(typeIDs)
+        idList = []
+
+        if numIDs > 100:
+            startID = 0
+            endID = 100
+            while startID < numIDs:
+                idList.append("&typeid=".join(map(str, typeIDs[startID:endID])))
+                startID = startID + 100
+                if ((numIDs - endID)) > 100:
+                    endID = endID + 100
+                else:
+                    endID = numIDs
+
+        else:
+            idList.append("&typeid=".join(map(str, typeIDs[0:numIDs])))
+
+        numIdLists = list(range(len(idList)))
+        for x in numIdLists:  # Iterate over all of the id lists generated above.
+            # Item prices from Dodi url:
+            # http://api.eve-central.com/api/marketstat?typeid=16437&typeid=4473&usesystem=30002659
+            apiURL = 'http://api.eve-central.com/api/marketstat?typeid=16437&typeid=%s&usesystem=30002659' % (idList[x])
+            print(apiURL)
+
+            try:  # Try to connect to the API server
+                target = urllib2.urlopen(apiURL)  # download the file
+                downloadedData = target.read()  # convert to string
+                target.close()  # close file because we don't need it anymore
+
+                tree = etree.fromstring(downloadedData)
+                types = tree.findall('.//type')
+
+                for child in types:
+                    ids = child.attrib
+                    buy = child.find('buy')
+                    sell = child.find('sell')
+                    if int(ids['id']) in typeIDs:
+                        itemBuy[int(ids['id'])] = float(buy.find('max').text)
+                        itemSell[int(ids['id'])] = float(sell.find('min').text)
+            except urllib2.HTTPError as err:
+                error = ('HTTP Error: %s %s' % (str(err.code), str(err.reason)))  # Error String
+                onError(error)
+            except urllib2.URLError as err:
+                error = ('Error Connecting to Tranquility: ' + str(err.reason))  # Error String
+                onError(error)
+            except httplib.HTTPException as err:
+                error = ('HTTP Exception')  # Error String
+                onError(error)
+            except Exception:
+                error = ('Generic Exception: ' + traceback.format_exc())  # Error String
+                onError(error)
+
+
+def reprocess(itemID):  # Takes a list of IDs to query the local db or api server.
+    minerals = {}
+    # We'll use the local static DB for items as they don't change.
+    if itemID != '':  # We have some ids we don't know.
+        try:
+            con = lite.connect('static.db')
+
+            with con:
+                cur = con.cursor()
+                # TODO: Change this to use ids through out until data is presented to user.
+                statement = "SELECT materialTypeID, quantity FROM invTypeMaterials WHERE typeID = " + str(itemID)
+                cur.execute(statement)
+
+                rows = cur.fetchall()
+
+                # Use the item strings returned to populate the typeNames dictionary.
+                for row in rows:
+                    minerals.update({int(row[0]): int(row[1])})
+
+        except lite.Error as err:
+            error = ('SQL Lite Error: ' + str(err.args[0]) + str(err.args[1:]))  # Error String
+            onError(error)
+        finally:
+            if con:
+                con.close()
+    return minerals
 
 
 def fetchData(logContent):
@@ -121,14 +331,15 @@ def refineOre(oreMined):
     # TODO: Use the ore to mineral values to calculate mineral output
     #for key in oreMined:
     numItems = range(len(OreOutput))
-    numMinerals = range(2, 9)
+    numMinerals = range(2, 9)  # We only need these values from OreOutput
+    # To match the keys used above:
     mineralNames = {2: 'Tritanium', 3: 'Pyrite', 4: 'Mexallon', 5: 'Isogen', 6: 'Nocxium', 7: 'Zydrine', 8: 'Megacyte', 9: 'Morphite'}
 
     # Iterate over the ore types
     for item in numItems:
         # Refined outputs: [0]Mineral Name, [1]Batch, [2]Tri, [3]Pye, [4]Mex, [5]Iso, [6]Noc, [7]Zyd, [8]Meg, [9]Mor
         if (OreOutput[item][0]) in oreMined:
-            batches = round(float(oreMined[OreOutput[item][0]]) / float(OreOutput[item][1]), 0)
+            batches = math.floor(float(oreMined[OreOutput[item][0]]) / float(OreOutput[item][1]))
             print('%s x %s' % (OreOutput[item][0], batches))
             for x in numMinerals:
                 if OreOutput[item][x] > 0:
@@ -333,44 +544,55 @@ class MainWindow(wx.Frame):
 
         wx.Frame.__init__(self, parent, title=title, size=(1024, 600))
 
-        panel = wx.Panel(self, -1)
-        panel.SetBackgroundColour(wx.NullColour)  # Use system default colour
+        #panel = wx.Panel(self, -1)
+        #panel.SetBackgroundColour(wx.NullColour)  # Use system default colour
+
+        self.mainNotebook = wx.Notebook(self, -1, style=0)
+
+        # Job tab widgets
+        self.notebookLogPane = wx.Panel(self.mainNotebook, -1)
 
         # Set up some content holders and labels in the frame.
-        self.lblOre = wx.StaticText(panel, label="Ore:")
-        self.oreBox = wx.TextCtrl(panel, style=wx.TE_MULTILINE, size=(-1, -1))
+        self.lblOre = wx.StaticText(self.notebookLogPane, label="Ore:")
+        self.oreBox = wx.TextCtrl(self.notebookLogPane, style=wx.TE_MULTILINE, size=(-1, -1))
         self.oreBox.SetFont(wx.Font(9, wx.FONTFAMILY_DEFAULT,
                                                    wx.FONTSTYLE_NORMAL,
                                                    wx.FONTWEIGHT_NORMAL,
                                                    False))
 
-        self.lblIce = wx.StaticText(panel, label="Ice:")
-        self.iceBox = wx.TextCtrl(panel, style=wx.TE_MULTILINE, size=(-1, -1))
+        self.lblIce = wx.StaticText(self.notebookLogPane, label="Ice:")
+        self.iceBox = wx.TextCtrl(self.notebookLogPane, style=wx.TE_MULTILINE, size=(-1, -1))
         self.iceBox.SetFont(wx.Font(9, wx.FONTFAMILY_DEFAULT,
                                                    wx.FONTSTYLE_NORMAL,
                                                    wx.FONTWEIGHT_NORMAL,
                                                    False))
 
-        self.lblTotals = wx.StaticText(panel, label="Totals:")
-        self.totalsBox = wx.TextCtrl(panel, style=wx.TE_MULTILINE, size=(-1, -1))
+        self.lblTotals = wx.StaticText(self.notebookLogPane, label="Totals:")
+        self.totalsBox = wx.TextCtrl(self.notebookLogPane, style=wx.TE_MULTILINE, size=(-1, -1))
         self.totalsBox.SetFont(wx.Font(9, wx.FONTFAMILY_DEFAULT,
                                                    wx.FONTSTYLE_NORMAL,
                                                    wx.FONTWEIGHT_NORMAL,
                                                    False))
 
-        self.lblSalvage = wx.StaticText(panel, label="Salvaged Materials:")
-        self.salvageBox = wx.TextCtrl(panel, style=wx.TE_MULTILINE, size=(-1, -1))
+        self.lblSalvage = wx.StaticText(self.notebookLogPane, label="Salvaged Materials:")
+        self.salvageBox = wx.TextCtrl(self.notebookLogPane, style=wx.TE_MULTILINE, size=(-1, -1))
         self.salvageBox.SetFont(wx.Font(9, wx.FONTFAMILY_DEFAULT,
                                                    wx.FONTSTYLE_NORMAL,
                                                    wx.FONTWEIGHT_NORMAL,
                                                    False))
 
-        self.lblOther = wx.StaticText(panel, label="Other:")
-        self.otherBox = wx.TextCtrl(panel, style=wx.TE_MULTILINE, size=(-1, -1))
+        self.lblOther = wx.StaticText(self.notebookLogPane, label="Loot:")
+        self.otherBox = wx.TextCtrl(self.notebookLogPane, style=wx.TE_MULTILINE, size=(-1, -1))
         self.otherBox.SetFont(wx.Font(9, wx.FONTFAMILY_DEFAULT,
                                                    wx.FONTSTYLE_NORMAL,
                                                    wx.FONTWEIGHT_NORMAL,
                                                    False))
+
+        # salvageList tab widgets
+        self.notebookSalvagePane = wx.Panel(self.mainNotebook, -1)
+        self.salvageList = GroupListView(self.notebookSalvagePane, -1, style=wx.LC_REPORT | wx.SUNKEN_BORDER)
+
+        self.ticker = Ticker(self)
 
         self.statusbar = self.CreateStatusBar()  # A Statusbar in the bottom of the window
         self.statusbar.SetStatusText('Welcome to Nema')
@@ -397,7 +619,7 @@ class MainWindow(wx.Frame):
 #        iceSizer = wx.BoxSizer(wx.VERTICAL)
         totalSizer = wx.BoxSizer(wx.VERTICAL)
         salvageSizer = wx.BoxSizer(wx.VERTICAL)
-        panel.SetSizer(sizer)
+        #panel.SetSizer(sizer)
 
         oreSizer.Add(self.lblOre, 0, wx.EXPAND | wx.ALL, 1)
         oreSizer.Add(self.oreBox, 1, wx.EXPAND | wx.ALL, 1)
@@ -420,7 +642,35 @@ class MainWindow(wx.Frame):
         sizer.Add(salvageSizer, 1, wx.EXPAND | wx.ALL, 1)
 
         mainSizer = wx.BoxSizer(wx.VERTICAL)
-        mainSizer.Add(panel, 1, wx.EXPAND)
+        reprocessSizer = wx.BoxSizer(wx.VERTICAL)
+
+        #logSizer.Add(self.jobBtn, 0, wx.ALIGN_RIGHT | wx.ADJUST_MINSIZE, 0)
+        reprocessSizer.Add(self.salvageList, 1, wx.EXPAND | wx.ALL, 1)
+        #logSizer.Add(self.jobDetailBox, 1, wx.EXPAND, 0)
+        self.notebookLogPane.SetSizer(sizer)
+        self.notebookSalvagePane.SetSizer(reprocessSizer)
+
+        self.mainNotebook.AddPage(self.notebookLogPane, ("Log"))
+        self.mainNotebook.AddPage(self.notebookSalvagePane, ("Loot"))
+        mainSizer.Add(self.mainNotebook, 1, wx.EXPAND, 0)
+        mainSizer.Add(self.ticker, flag=wx.EXPAND | wx.ALL, border=5)
+
+        self.ticker.SetDirection('rtl')
+        self.ticker.SetFPS(20)
+        self.ticker.SetPPF(2)
+        self.ticker.SetText('')
+
+        # itemID, itemName, itemBuyValue, itemSellValue, reprocessBuyValue, reprocessSellValue, action
+        self.salvageList.SetColumns([
+            ColumnDefn('Item', 'left', 300, 'itemName'),
+            ColumnDefn('Market Buy Orders', 'right', 170, 'itemBuyValue'),
+            ColumnDefn('Market Sell Orders', 'right', 170, 'itemSellValue'),
+            ColumnDefn('Materials Buy Orders', 'right', 170, 'reprocessBuyValue'),
+            ColumnDefn('Materials Sell Orders', 'right', 170, 'reprocessSellValue'),
+            ColumnDefn('Recommendation', 'centre', 100, 'action')
+        ])
+        self.salvageList.SetSortColumn(self.salvageList.columns[6])
+
         self.SetSizer(mainSizer)
         mainSizer.Layout()
 
@@ -457,8 +707,77 @@ class MainWindow(wx.Frame):
                 self.otherBox.SetValue(otherOutput)  # Changes text box content to string otherOutput.
                 self.totalsBox.SetValue(totalsOutput)
 
+                if other:
+                    systemID = 30002659
+                    names = []
+                    fetchMinerals()
+
+                    ticker = ("%s:    " % systemNames[systemID])
+                    #print("Mineral Prices from %s\n" % systemNames[systemID])
+
+                    for mineral in mineralIDs:
+                        ticker = ('%s%s: Buy: %s / Sell: %s    ' % (ticker, mineralIDs[mineral], mineralBuy[mineral], mineralSell[mineral]))
+                        #print('%s (%s): Buy: %s / Sell: %s' % (mineralIDs[mineral], int(mineral), mineralBuy[mineral], mineralSell[mineral]))
+
+                    #print(other)
+                    for item in other:
+                        if item[1] not in names:
+                            names.append(item[1])
+
+                    #print(names)
+
+                    typeNames, typePortions = id2name('name', names)
+
+                    #systemID = 30002659
+                    idList = []
+                    for item in typeNames:
+                        idList.append(item)
+
+                    #print(idList)
+                    #idList = [4473, 16437]
+                    fetchItems(idList)
+
+                    #print("\nPrices Limited to %s:    " % systemNames[systemID])
+
+                    tempSalvageRows = []
+                    #print(typeNames)
+                    #print(itemBuy)
+                    #print(itemSell)
+
+                    for item in typeNames:
+                        #output = reprocess(16437)
+                        output = reprocess(int(item))
+                        #print(typeNames[item])
+                        #print('%s (%s): Buy: %s / Sell: %s' % (typeNames[item], int(item), itemBuy[item], itemSell[item]))
+                        #print(output)
+
+                        buyTotal = 0  # Fullfilling Buy orders
+                        sellTotal = 0  # Placing Sell orders
+                        for key in output:
+                            #print('%s x %s = %s' % (mineralIDs[key], output[key], (int(output[key]) * mineralBuy[key])))
+                            buyTotal = buyTotal + (int(output[key]) * mineralBuy[key])
+                            sellTotal = sellTotal + (int(output[key]) * mineralSell[key])
+                        #print('Reprocess total fullfilling Buy orders= %s ISK' % (buyTotal))
+                        #print('Reprocess total placing Sell orders= %s ISK\n' % (sellTotal))
+                        if (sellTotal > itemSell[item]):
+                            action = 'Reprocess'
+                        else:
+                            action = 'Sell'
+
+                        if typePortions[item] != '1':
+                            itemName = '%s (x%s)' % (typeNames[item], typePortions[item])
+                            tempSalvageRows.append(Salvage(int(item), itemName, (float(itemBuy[item]) * float(typePortions[item])),
+                                                           (float(itemSell[item]) * float(typePortions[item])), buyTotal, sellTotal, action))
+                        else:
+                            tempSalvageRows.append(Salvage(int(item), typeNames[item], itemBuy[item], itemSell[item], buyTotal, sellTotal, action))
+
+                    if tempSalvageRows != []:
+                        salvageRows = tempSalvageRows[:]
+                    self.salvageList.SetObjects(salvageRows)
+
                 self.statusbar.SetBackgroundColour(wx.NullColour)  # Resets to system default if changed by file check.
                 self.statusbar.SetStatusText(self.filename)
+                self.ticker.SetText(ticker)
 
         dlg.Destroy()
 
