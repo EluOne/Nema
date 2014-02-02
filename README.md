@@ -9,7 +9,9 @@ At present it is a single window application which will output the data from a s
 Currently this output groups by pilot and ore type, then outputs the fleet percentages of volume mined.
 Salvaged materials and everything else not ice or ore currently dumps into their own columns only grouped by pilot.
 
-The unreleased version of NEMA is currently under going a large UI overhaul and expansion of features to be more of a general fleet tool, with work being done on a Loot analysis tool to give suggestions on what should be sold and what should be refined according to your prefered local in game market.
-The Loot analysis tool requires an internet connection to fetch data from the out of game market data soure eve-central.com
+The unreleased version of NEMA is currently under going a large UI overhaul and expansion of features to be more of a general fleet tool.
 
-This project uses wxPython and ObjectListView modules.
+The main window now uses a tabbed layout to make way for the new 'Loot' tab showing the output from a new analysis tool to give the user an overview of what should be done with the items collected.
+The Loot analysis tool makes use the CCP static data dump in sqlite3 format and requires an internet connection to fetch current market data from the out of game source eve-central.com to give suggestions on what should be sold and what should be reprocessed according to your prefered local in game market.
+
+This project uses wxPython, sqlite3 and ObjectListView modules.
