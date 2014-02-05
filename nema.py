@@ -68,6 +68,7 @@ OreTypes = {'Arkonor': 16, 'Bistot': 16, 'Crokite': 16, 'Dark Ochre': 8,
 IceTypes = {'Blue Ice': 1000, 'White Glaze': 1000, 'Glacial Mass': 1000, 'Clear Icicle': 1000}
 
 # Refined outputs: [0]Mineral Name, [1]Batch, [2]Tri, [3]Pye, [4]Mex, [5]Iso, [6]Noc, [7]Zyd, [8]Meg, [9]Mor
+# TODO: Expand to include all ore types (2 more per group)
 OreOutput = [['Arkonor', 200, 300, 0, 0, 0, 0, 166, 333, 0],
              ['Bistot', 200, 0, 170, 0, 0, 0, 341, 170, 0],
              ['Crokite', 250, 331, 0, 0, 0, 331, 663, 0, 0],
@@ -254,7 +255,6 @@ def reprocess(itemID):  # Takes a list of IDs to query the local db or api serve
 
             with con:
                 cur = con.cursor()
-                # TODO: Change this to use ids through out until data is presented to user.
                 statement = "SELECT materialTypeID, quantity FROM invTypeMaterials WHERE typeID = " + str(itemID)
                 cur.execute(statement)
 
@@ -663,10 +663,10 @@ class MainWindow(wx.Frame):
         # itemID, itemName, itemBuyValue, itemSellValue, reprocessBuyValue, reprocessSellValue, action
         self.salvageList.SetColumns([
             ColumnDefn('Item', 'left', 300, 'itemName'),
-            ColumnDefn('Market Buy Orders', 'right', 170, 'itemBuyValue'),
-            ColumnDefn('Market Sell Orders', 'right', 170, 'itemSellValue'),
-            ColumnDefn('Materials Buy Orders', 'right', 170, 'reprocessBuyValue'),
-            ColumnDefn('Materials Sell Orders', 'right', 170, 'reprocessSellValue'),
+            ColumnDefn('Market Buy Orders', 'right', 165, 'itemBuyValue'),
+            ColumnDefn('Market Sell Orders', 'right', 165, 'itemSellValue'),
+            ColumnDefn('Materials Buy Orders', 'right', 165, 'reprocessBuyValue'),
+            ColumnDefn('Materials Sell Orders', 'right', 165, 'reprocessSellValue'),
             ColumnDefn('Recommendation', 'centre', 100, 'action')
         ])
         self.salvageList.SetSortColumn(self.salvageList.columns[6])
@@ -754,9 +754,10 @@ class MainWindow(wx.Frame):
                         buyTotal = 0  # Fullfilling Buy orders
                         sellTotal = 0  # Placing Sell orders
                         for key in output:
-                            #print('%s x %s = %s' % (mineralIDs[key], output[key], (int(output[key]) * mineralBuy[key])))
-                            buyTotal = buyTotal + (int(output[key]) * mineralBuy[key])
-                            sellTotal = sellTotal + (int(output[key]) * mineralSell[key])
+                            if key in mineralIDs:
+                                #print('%s x %s = %s' % (mineralIDs[key], output[key], (int(output[key]) * mineralBuy[key])))
+                                buyTotal = buyTotal + (int(output[key]) * mineralBuy[key])
+                                sellTotal = sellTotal + (int(output[key]) * mineralSell[key])
                         #print('Reprocess total fullfilling Buy orders= %s ISK' % (buyTotal))
                         #print('Reprocess total placing Sell orders= %s ISK\n' % (sellTotal))
                         if (sellTotal > itemSell[item]):
