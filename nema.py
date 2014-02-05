@@ -91,10 +91,11 @@ class Salvage(object):
     def __init__(self, itemID, itemName, itemBuyValue, itemSellValue, reprocessBuyValue, reprocessSellValue, action):
         self.itemID = itemID
         self.itemName = itemName
-        self.itemBuyValue = itemBuyValue
-        self.itemSellValue = itemSellValue
-        self.reprocessBuyValue = reprocessBuyValue
-        self.reprocessSellValue = reprocessSellValue
+        # '{:,.2f}'.format(value) Uses the Format Specification Mini-Language to produce more human friendly output.
+        self.itemBuyValue = '{:,.2f}'.format(itemBuyValue)
+        self.itemSellValue = '{:,.2f}'.format(itemSellValue)
+        self.reprocessBuyValue = '{:,.2f}'.format(reprocessBuyValue)
+        self.reprocessSellValue = '{:,.2f}'.format(reprocessSellValue)
         self.action = action
 
 
@@ -643,7 +644,6 @@ class MainWindow(wx.Frame):
 #        iceSizer = wx.BoxSizer(wx.VERTICAL)
         totalSizer = wx.BoxSizer(wx.VERTICAL)
         salvageSizer = wx.BoxSizer(wx.VERTICAL)
-        #panel.SetSizer(sizer)
 
         oreSizer.Add(self.lblOre, 0, wx.EXPAND | wx.ALL, 1)
         oreSizer.Add(self.oreBox, 1, wx.EXPAND | wx.ALL, 1)
