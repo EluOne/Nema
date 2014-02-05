@@ -539,13 +539,11 @@ def processLog():
 
 
 class MainWindow(wx.Frame):
-    def __init__(self, parent, title):
+    def __init__(self, *args, **kwds):
+        kwds["style"] = wx.DEFAULT_FRAME_STYLE
+        wx.Frame.__init__(self, *args, **kwds)
+
         self.dirname = ''
-
-        wx.Frame.__init__(self, parent, title=title, size=(1024, 600))
-
-        #panel = wx.Panel(self, -1)
-        #panel.SetBackgroundColour(wx.NullColour)  # Use system default colour
 
         self.mainNotebook = wx.Notebook(self, -1, style=0)
 
@@ -595,7 +593,6 @@ class MainWindow(wx.Frame):
         self.ticker = Ticker(self)
 
         self.statusbar = self.CreateStatusBar()  # A Statusbar in the bottom of the window
-        self.statusbar.SetStatusText('Welcome to Nema')
 
         # Setting up the menu.
         filemenu = wx.Menu()
@@ -613,6 +610,33 @@ class MainWindow(wx.Frame):
         self.Bind(wx.EVT_MENU, self.OnExit, menuExit)
         self.Bind(wx.EVT_MENU, self.OnAbout, menuAbout)
 
+        self.__set_properties()
+        self.__do_layout()
+
+    def __set_properties(self):
+        self.SetTitle('Nema')
+        self.SetSize((1024, 600))
+        self.SetBackgroundColour(wx.NullColour)  # Use system default colour
+
+        self.statusbar.SetStatusText('Welcome to Nema')
+
+        self.ticker.SetDirection('rtl')
+        self.ticker.SetFPS(20)
+        self.ticker.SetPPF(2)
+        self.ticker.SetText('')
+
+        # itemID, itemName, itemBuyValue, itemSellValue, reprocessBuyValue, reprocessSellValue, action
+        self.salvageList.SetColumns([
+            ColumnDefn('Item', 'left', 300, 'itemName'),
+            ColumnDefn('Market Buy Orders', 'right', 165, 'itemBuyValue'),
+            ColumnDefn('Market Sell Orders', 'right', 165, 'itemSellValue'),
+            ColumnDefn('Materials Buy Orders', 'right', 165, 'reprocessBuyValue'),
+            ColumnDefn('Materials Sell Orders', 'right', 165, 'reprocessSellValue'),
+            ColumnDefn('Recommendation', 'centre', 100, 'action')
+        ])
+        self.salvageList.SetSortColumn(self.salvageList.columns[6])
+
+    def __do_layout(self):
         # Use some sizers to see layout options
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         oreSizer = wx.BoxSizer(wx.VERTICAL)
@@ -655,24 +679,8 @@ class MainWindow(wx.Frame):
         mainSizer.Add(self.mainNotebook, 1, wx.EXPAND, 0)
         mainSizer.Add(self.ticker, flag=wx.EXPAND | wx.ALL, border=5)
 
-        self.ticker.SetDirection('rtl')
-        self.ticker.SetFPS(20)
-        self.ticker.SetPPF(2)
-        self.ticker.SetText('')
-
-        # itemID, itemName, itemBuyValue, itemSellValue, reprocessBuyValue, reprocessSellValue, action
-        self.salvageList.SetColumns([
-            ColumnDefn('Item', 'left', 300, 'itemName'),
-            ColumnDefn('Market Buy Orders', 'right', 165, 'itemBuyValue'),
-            ColumnDefn('Market Sell Orders', 'right', 165, 'itemSellValue'),
-            ColumnDefn('Materials Buy Orders', 'right', 165, 'reprocessBuyValue'),
-            ColumnDefn('Materials Sell Orders', 'right', 165, 'reprocessSellValue'),
-            ColumnDefn('Recommendation', 'centre', 100, 'action')
-        ])
-        self.salvageList.SetSortColumn(self.salvageList.columns[6])
-
         self.SetSizer(mainSizer)
-        mainSizer.Layout()
+        self.Layout()
 
     def OnOpen(self, e):
         # Open a file
@@ -827,9 +835,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>."""
             self.Close(True)
 
 
+class MyApp(wx.App):
+    def OnInit(self):
+        frame = MainWindow(None, -1, '')
+        self.SetTopWindow(frame)
+        frame.Center()
+        frame.Show()
+        return 1
+
+# end of class MyApp
+
 if __name__ == '__main__':
-    app = wx.App(0)
-    frame = MainWindow(None, "Nema")
-    app.SetTopWindow(frame)
-    frame.Show()
+    app = MyApp(0)
     app.MainLoop()
