@@ -215,7 +215,7 @@ def fetchItems(typeIDs):
         for x in numIdLists:  # Iterate over all of the id lists generated above.
             # Item prices from Dodi url:
             # http://api.eve-central.com/api/marketstat?typeid=16437&typeid=4473&usesystem=30002659
-            apiURL = 'http://api.eve-central.com/api/marketstat?typeid=16437&typeid=%s&usesystem=30002659' % (idList[x])
+            apiURL = 'http://api.eve-central.com/api/marketstat?typeid=%s&usesystem=30002659' % (idList[x])
             print(apiURL)
 
             try:  # Try to connect to the API server
@@ -599,6 +599,7 @@ class MainWindow(wx.Frame):
         filemenu = wx.Menu()
         menuAbout = filemenu.Append(wx.ID_ABOUT, "&About", " Information about this program")
         menuOpen = filemenu.Append(wx.ID_OPEN, "&Open", " Open a log file")
+        menuExport = filemenu.Append(wx.ID_SAVE, "&Export", " Export the Loot Tab")
         menuExit = filemenu.Append(wx.ID_EXIT, "E&xit", " Terminate the program")
 
         # Creating the menubar.
@@ -608,6 +609,7 @@ class MainWindow(wx.Frame):
 
         # Menu events.
         self.Bind(wx.EVT_MENU, self.OnOpen, menuOpen)
+        self.Bind(wx.EVT_MENU, self.OnExport, menuExport)
         self.Bind(wx.EVT_MENU, self.OnExit, menuExit)
         self.Bind(wx.EVT_MENU, self.OnAbout, menuAbout)
 
@@ -683,10 +685,10 @@ class MainWindow(wx.Frame):
         self.Layout()
 
     def OnOpen(self, e):
-        # Open a file
+        # Open a fleet log file
         self.dirname = ''
 
-        dlg = wx.FileDialog(self, "Choose a log file", self.dirname, "", "*.txt", wx.OPEN)
+        dlg = wx.FileDialog(self, "Choose a log file", self.dirname, "", "Text Files (*.txt)|*.txt", wx.OPEN)
         if dlg.ShowModal() == wx.ID_OK:
             self.filename = dlg.GetFilename()
             self.logFile = dlg.GetPath()
@@ -788,6 +790,24 @@ class MainWindow(wx.Frame):
                 self.statusbar.SetStatusText(self.filename)
                 self.ticker.SetText(ticker)
 
+        dlg.Destroy()
+
+    def OnExport(self, event):
+        # Export the contents of the Loot tab table as csv.
+        self.dirname = ''
+        wildcard = "Comma Separated (*.csv)|*.csv|All files (*.*)|*.*"
+        dlg = wx.FileDialog(self, 'Export Loot to File', self.dirname, 'export.csv', wildcard, wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
+        if dlg.ShowModal() == wx.ID_OK:
+            path = dlg.GetPath()
+            f = file(path, 'w')
+            # Salvage(itemID, itemName, itemBuyValue, itemSellValue, reprocessBuyValue, reprocessSellValue, action)
+            dataExport = ('Item Name,Market Buy Orders,Market Sell Orders,Material Buy Orders,Material Sell Orders,Recommendation\n')
+            salvageRows = self.salvageList.GetObjects()
+            for row in salvageRows:
+                dataExport = ('%s%s,%s,%s,%s,%s,%s\n' % (dataExport, row.itemName, row.itemBuyValue, row.itemSellValue, row.reprocessBuyValue, row.reprocessSellValue, row.action))
+            f.write(dataExport)
+            f.close()
+            print(path)
         dlg.Destroy()
 
     def OnAbout(self, e):
