@@ -91,11 +91,10 @@ class Salvage(object):
     def __init__(self, itemID, itemName, itemBuyValue, itemSellValue, reprocessBuyValue, reprocessSellValue, action):
         self.itemID = itemID
         self.itemName = itemName
-        # '{:,.2f}'.format(value) Uses the Format Specification Mini-Language to produce more human friendly output.
-        self.itemBuyValue = '{:,.2f}'.format(itemBuyValue)
-        self.itemSellValue = '{:,.2f}'.format(itemSellValue)
-        self.reprocessBuyValue = '{:,.2f}'.format(reprocessBuyValue)
-        self.reprocessSellValue = '{:,.2f}'.format(reprocessSellValue)
+        self.itemBuyValue = itemBuyValue
+        self.itemSellValue = itemSellValue
+        self.reprocessBuyValue = reprocessBuyValue
+        self.reprocessSellValue = reprocessSellValue
         self.action = action
 
 
@@ -103,7 +102,6 @@ def onError(error):
     dlg = wx.MessageDialog(None, 'An error has occurred:\n' + error, '', wx.OK | wx.ICON_ERROR)
     dlg.ShowModal()  # Show it
     dlg.Destroy()  # finally destroy it when finished.
-#    print('An error has occurred:\n' + error, '\n')
 
 
 def id2name(idType, ids):  # Takes a list of IDs to query the local db or api server.
@@ -130,18 +128,11 @@ def id2name(idType, ids):  # Takes a list of IDs to query the local db or api se
                         ids.remove(row[1])
 
                 if ids != []:  # We have some ids we don't know.
-                    #numItems = range(len(ids))
-                    #for y in numItems:
-                    #    typeNames.update({str(ids[y]): str(ids[y])})
                     error = ('Item not found in database: ' + str(ids))  # Error String
                     onError(error)
 
             except lite.Error as err:
                 error = ('SQL Lite Error: ' + str(err.args[0]) + str(err.args[1:]))  # Error String
-                #ids = idList.split("', '")
-                #numItems = range(len(ids))
-                #for y in numItems:
-                #    typeNames.update({str(ids[y]): str(ids[y])})
                 onError(error)
             finally:
                 if con:
@@ -154,7 +145,6 @@ def fetchMinerals():
     global mineralSell
 
     # All base minerals from Dodi url:
-    # http://api.eve-central.com/api/marketstat?typeid=34&typeid=35&typeid=36&typeid=37&typeid=38&typeid=39&typeid=40&usesystem=30002659
     apiURL = 'http://api.eve-central.com/api/marketstat?typeid=34&typeid=35&typeid=36&typeid=37&typeid=38&typeid=39&typeid=40&typeid=11399&usesystem=30002659'
 
     try:  # Try to connect to the API server
@@ -214,9 +204,8 @@ def fetchItems(typeIDs):
         numIdLists = list(range(len(idList)))
         for x in numIdLists:  # Iterate over all of the id lists generated above.
             # Item prices from Dodi url:
-            # http://api.eve-central.com/api/marketstat?typeid=16437&typeid=4473&usesystem=30002659
             apiURL = 'http://api.eve-central.com/api/marketstat?typeid=%s&usesystem=30002659' % (idList[x])
-            print(apiURL)
+            #print(apiURL)
 
             try:  # Try to connect to the API server
                 target = urllib2.urlopen(apiURL)  # download the file
@@ -539,6 +528,11 @@ def processLog():
     return iceOutput, oreOutput, salvageOutput, otherOutput, totalsOutput
 
 
+def humanFriendly(value):
+    # '{:,.2f}'.format(value) Uses the Format Specification Mini-Language to produce more human friendly output.
+    return '{:,.2f}'.format(value)
+
+
 class MainWindow(wx.Frame):
     def __init__(self, *args, **kwds):
         kwds["style"] = wx.DEFAULT_FRAME_STYLE
@@ -631,10 +625,10 @@ class MainWindow(wx.Frame):
         # itemID, itemName, itemBuyValue, itemSellValue, reprocessBuyValue, reprocessSellValue, action
         self.salvageList.SetColumns([
             ColumnDefn('Item', 'left', 300, 'itemName'),
-            ColumnDefn('Market Buy Orders', 'right', 165, 'itemBuyValue'),
-            ColumnDefn('Market Sell Orders', 'right', 165, 'itemSellValue'),
-            ColumnDefn('Materials Buy Orders', 'right', 165, 'reprocessBuyValue'),
-            ColumnDefn('Materials Sell Orders', 'right', 165, 'reprocessSellValue'),
+            ColumnDefn('Market Buy Orders', 'right', 165, 'itemBuyValue', stringConverter=humanFriendly),
+            ColumnDefn('Market Sell Orders', 'right', 165, 'itemSellValue', stringConverter=humanFriendly),
+            ColumnDefn('Materials Buy Orders', 'right', 165, 'reprocessBuyValue', stringConverter=humanFriendly),
+            ColumnDefn('Materials Sell Orders', 'right', 165, 'reprocessSellValue', stringConverter=humanFriendly),
             ColumnDefn('Recommendation', 'centre', 100, 'action')
         ])
         self.salvageList.SetSortColumn(self.salvageList.columns[6])
