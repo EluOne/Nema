@@ -539,6 +539,10 @@ class MainWindow(wx.Frame):
         wx.Frame.__init__(self, *args, **kwds)
 
         self.dirname = ''
+        fontSettings = wx.Font(9, wx.FONTFAMILY_DEFAULT,
+                                                   wx.FONTSTYLE_NORMAL,
+                                                   wx.FONTWEIGHT_NORMAL,
+                                                   False)
 
         self.mainNotebook = wx.Notebook(self, -1, style=0)
 
@@ -548,38 +552,30 @@ class MainWindow(wx.Frame):
         # Set up some content holders and labels in the frame.
         self.lblOre = wx.StaticText(self.notebookLogPane, label="Ore:")
         self.oreBox = wx.TextCtrl(self.notebookLogPane, style=wx.TE_MULTILINE, size=(-1, -1))
-        self.oreBox.SetFont(wx.Font(9, wx.FONTFAMILY_DEFAULT,
-                                                   wx.FONTSTYLE_NORMAL,
-                                                   wx.FONTWEIGHT_NORMAL,
-                                                   False))
+        self.oreBox.SetFont(fontSettings)
 
         self.lblIce = wx.StaticText(self.notebookLogPane, label="Ice:")
         self.iceBox = wx.TextCtrl(self.notebookLogPane, style=wx.TE_MULTILINE, size=(-1, -1))
-        self.iceBox.SetFont(wx.Font(9, wx.FONTFAMILY_DEFAULT,
-                                                   wx.FONTSTYLE_NORMAL,
-                                                   wx.FONTWEIGHT_NORMAL,
-                                                   False))
+        self.iceBox.SetFont(fontSettings)
 
-        self.lblTotals = wx.StaticText(self.notebookLogPane, label="Totals:")
-        self.totalsBox = wx.TextCtrl(self.notebookLogPane, style=wx.TE_MULTILINE, size=(-1, -1))
-        self.totalsBox.SetFont(wx.Font(9, wx.FONTFAMILY_DEFAULT,
-                                                   wx.FONTSTYLE_NORMAL,
-                                                   wx.FONTWEIGHT_NORMAL,
-                                                   False))
+        #self.lblTotals = wx.StaticText(self.notebookLogPane, label="Totals:")
+        #self.totalsBox = wx.TextCtrl(self.notebookLogPane, style=wx.TE_MULTILINE, size=(-1, -1))
+        #self.totalsBox.SetFont(fontSettings)
 
         self.lblSalvage = wx.StaticText(self.notebookLogPane, label="Salvaged Materials:")
         self.salvageBox = wx.TextCtrl(self.notebookLogPane, style=wx.TE_MULTILINE, size=(-1, -1))
-        self.salvageBox.SetFont(wx.Font(9, wx.FONTFAMILY_DEFAULT,
-                                                   wx.FONTSTYLE_NORMAL,
-                                                   wx.FONTWEIGHT_NORMAL,
-                                                   False))
+        self.salvageBox.SetFont(fontSettings)
 
         self.lblOther = wx.StaticText(self.notebookLogPane, label="Loot:")
         self.otherBox = wx.TextCtrl(self.notebookLogPane, style=wx.TE_MULTILINE, size=(-1, -1))
-        self.otherBox.SetFont(wx.Font(9, wx.FONTFAMILY_DEFAULT,
-                                                   wx.FONTSTYLE_NORMAL,
-                                                   wx.FONTWEIGHT_NORMAL,
-                                                   False))
+        self.otherBox.SetFont(fontSettings)
+
+        # Ore tab widgets
+        self.notebookOrePane = wx.Panel(self.mainNotebook, -1)
+
+        self.lblTotals = wx.StaticText(self.notebookOrePane, label="Totals:")
+        self.totalsBox = wx.TextCtrl(self.notebookOrePane, style=wx.TE_MULTILINE, size=(-1, -1))
+        self.totalsBox.SetFont(fontSettings)
 
         # salvageList tab widgets
         self.notebookSalvagePane = wx.Panel(self.mainNotebook, -1)
@@ -635,46 +631,48 @@ class MainWindow(wx.Frame):
 
     def __do_layout(self):
         # Use some sizers to see layout options
-        sizer = wx.BoxSizer(wx.HORIZONTAL)
+        mainSizer = wx.BoxSizer(wx.VERTICAL)
+        oreTabSizer = wx.BoxSizer(wx.VERTICAL)
+        reprocessTabSizer = wx.BoxSizer(wx.VERTICAL)
+
+        logTabSizer = wx.BoxSizer(wx.HORIZONTAL)
         oreSizer = wx.BoxSizer(wx.VERTICAL)
-#        iceSizer = wx.BoxSizer(wx.VERTICAL)
+        iceSizer = wx.BoxSizer(wx.VERTICAL)
         totalSizer = wx.BoxSizer(wx.VERTICAL)
-        salvageSizer = wx.BoxSizer(wx.VERTICAL)
+        lootSizer = wx.BoxSizer(wx.VERTICAL)
 
         oreSizer.Add(self.lblOre, 0, wx.EXPAND | wx.ALL, 1)
         oreSizer.Add(self.oreBox, 1, wx.EXPAND | wx.ALL, 1)
-        oreSizer.Add(self.lblIce, 0, wx.EXPAND | wx.ALL, 1)
-        oreSizer.Add(self.iceBox, 1, wx.EXPAND | wx.ALL, 1)
 
-#        iceSizer.Add(self.lblIce, 0, wx.EXPAND | wx.ALL, 1)
-#        iceSizer.Add(self.iceBox, 1, wx.EXPAND | wx.ALL, 1)
+        iceSizer.Add(self.lblIce, 0, wx.EXPAND | wx.ALL, 1)
+        iceSizer.Add(self.iceBox, 1, wx.EXPAND | wx.ALL, 1)
+
         totalSizer.Add(self.lblTotals, 0, wx.EXPAND | wx.ALL, 1)
         totalSizer.Add(self.totalsBox, 1, wx.EXPAND | wx.ALL, 1)
 
-        salvageSizer.Add(self.lblSalvage, 0, wx.EXPAND | wx.ALL, 1)
-        salvageSizer.Add(self.salvageBox, 1, wx.EXPAND | wx.ALL, 1)
-        salvageSizer.Add(self.lblOther, 0, wx.EXPAND | wx.ALL, 1)
-        salvageSizer.Add(self.otherBox, 1, wx.EXPAND | wx.ALL, 1)
+        iceSizer.Add(self.lblSalvage, 0, wx.EXPAND | wx.ALL, 1)
+        iceSizer.Add(self.salvageBox, 1, wx.EXPAND | wx.ALL, 1)
 
-        sizer.Add(oreSizer, 1, wx.EXPAND | wx.ALL, 1)
-#        sizer.Add(iceSizer, 1, wx.EXPAND | wx.ALL, 1)
-        sizer.Add(totalSizer, 1, wx.EXPAND | wx.ALL, 1)
-        sizer.Add(salvageSizer, 1, wx.EXPAND | wx.ALL, 1)
+        lootSizer.Add(self.lblOther, 0, wx.EXPAND | wx.ALL, 1)
+        lootSizer.Add(self.otherBox, 1, wx.EXPAND | wx.ALL, 1)
 
-        mainSizer = wx.BoxSizer(wx.VERTICAL)
-        reprocessSizer = wx.BoxSizer(wx.VERTICAL)
+        logTabSizer.Add(oreSizer, 1, wx.EXPAND | wx.ALL, 1)
+        logTabSizer.Add(iceSizer, 1, wx.EXPAND | wx.ALL, 1)
+        logTabSizer.Add(lootSizer, 1, wx.EXPAND | wx.ALL, 1)
 
-        #logSizer.Add(self.jobBtn, 0, wx.ALIGN_RIGHT | wx.ADJUST_MINSIZE, 0)
-        reprocessSizer.Add(self.salvageList, 1, wx.EXPAND | wx.ALL, 1)
-        #logSizer.Add(self.jobDetailBox, 1, wx.EXPAND, 0)
-        self.notebookLogPane.SetSizer(sizer)
-        self.notebookSalvagePane.SetSizer(reprocessSizer)
+        oreTabSizer.Add(totalSizer, 1, wx.EXPAND | wx.ALL, 1)
+
+        reprocessTabSizer.Add(self.salvageList, 1, wx.EXPAND | wx.ALL, 1)
+
+        self.notebookLogPane.SetSizer(logTabSizer)
+        self.notebookOrePane.SetSizer(oreTabSizer)
+        self.notebookSalvagePane.SetSizer(reprocessTabSizer)
 
         self.mainNotebook.AddPage(self.notebookLogPane, ("Log"))
+        self.mainNotebook.AddPage(self.notebookOrePane, ("Ore"))
         self.mainNotebook.AddPage(self.notebookSalvagePane, ("Loot"))
         mainSizer.Add(self.mainNotebook, 1, wx.EXPAND, 0)
         mainSizer.Add(self.ticker, flag=wx.EXPAND | wx.ALL, border=5)
-
         self.SetSizer(mainSizer)
         self.Layout()
 
@@ -801,7 +799,6 @@ class MainWindow(wx.Frame):
                 dataExport = ('%s%s,%s,%s,%s,%s,%s\n' % (dataExport, row.itemName, row.itemBuyValue, row.itemSellValue, row.reprocessBuyValue, row.reprocessSellValue, row.action))
             f.write(dataExport)
             f.close()
-            print(path)
         dlg.Destroy()
 
     def OnAbout(self, e):
