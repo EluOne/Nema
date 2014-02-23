@@ -595,7 +595,8 @@ class MainWindow(wx.Frame):
         # Ore tab widgets
         self.notebookOrePane = wx.Panel(self.mainNotebook, -1)
 
-        img = wx.EmptyImage(240, 240)
+        img = wx.EmptyImage(677, 485)  # Initialise an empty image. This will be black.
+        img.Replace(0, 0, 0, 255, 255, 255)  # Set the empty place holder image to white.
         self.orePie = wx.StaticBitmap(self.notebookOrePane, wx.ID_ANY, wx.BitmapFromImage(img))
 
         self.lblOreTotals = wx.StaticText(self.notebookOrePane, label="Ore Totals:")
@@ -759,6 +760,7 @@ class MainWindow(wx.Frame):
                     else:
                         newH = H
                         newW = H * aspect
+                # Need to add padding to image if aspect differs from sizers aspect.
                 img = img.Scale(newW, newH)
 
                 self.orePie.SetBitmap(wx.BitmapFromImage(img))
