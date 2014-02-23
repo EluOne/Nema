@@ -28,6 +28,8 @@ import xml.etree.ElementTree as etree
 
 import wx
 from wx.lib.ticker import Ticker
+import pylab
+
 from operator import itemgetter
 
 from ObjectListView import ObjectListView, ColumnDefn, GroupListView
@@ -56,6 +58,8 @@ mineralSell = {}
 
 itemBuy = {}
 itemSell = {}
+
+orePieData = {}
 
 # These are the expected column headers from the first row of the data file
 columns = {'Time', 'Character', 'Item Type', 'Quantity', 'Item Group'}
@@ -482,7 +486,9 @@ def processLog():
                         else:
                             oreOutput = ('%s%s x %s = %.2f m3\n' % (oreOutput, entry[2], entry[1], entry[4]))
                         pilotOre = entry[4] + pilotOre
-                oreTotals.append([name, pilotOre, ((float(pilotOre) / float(totalOre)) * 100)])
+                pilotOreShare = ((float(pilotOre) / float(totalOre)) * 100)
+                orePieData[name] = pilotOreShare
+                oreTotals.append([name, pilotOre, pilotOreShare])
                 oreOutput = oreOutput + '\n'
 
             totalsOutput = ('%sUnits of Ore:\n\n' % (totalsOutput))
@@ -528,6 +534,26 @@ def processLog():
     return iceOutput, oreOutput, salvageOutput, otherOutput, totalsOutput
 
 
+def makePie(values):
+    # make a square figure and axes
+    pylab.figure(1, figsize=(6, 6))
+    ax = pylab.axes([0.1, 0.1, 0.8, 0.8])
+
+    labels = []
+    fracs = []
+    explode = []
+
+    for pilot in values:
+        labels.append(pilot)
+        fracs.append(values[pilot])
+        explode.append(0)
+
+    pylab.pie(fracs, explode=explode, labels=labels, autopct='%1.1f%%', shadow=True)
+
+    pylab.savefig("images/ore.png", bbox_inches='tight')
+    pylab.close()
+
+
 def humanFriendly(value):
     # '{:,.2f}'.format(value) Uses the Format Specification Mini-Language to produce more human friendly output.
     return '{:,.2f}'.format(value)
@@ -558,10 +584,6 @@ class MainWindow(wx.Frame):
         self.iceBox = wx.TextCtrl(self.notebookLogPane, style=wx.TE_MULTILINE, size=(-1, -1))
         self.iceBox.SetFont(fontSettings)
 
-        #self.lblTotals = wx.StaticText(self.notebookLogPane, label="Totals:")
-        #self.totalsBox = wx.TextCtrl(self.notebookLogPane, style=wx.TE_MULTILINE, size=(-1, -1))
-        #self.totalsBox.SetFont(fontSettings)
-
         self.lblSalvage = wx.StaticText(self.notebookLogPane, label="Salvaged Materials:")
         self.salvageBox = wx.TextCtrl(self.notebookLogPane, style=wx.TE_MULTILINE, size=(-1, -1))
         self.salvageBox.SetFont(fontSettings)
@@ -573,9 +595,16 @@ class MainWindow(wx.Frame):
         # Ore tab widgets
         self.notebookOrePane = wx.Panel(self.mainNotebook, -1)
 
-        self.lblTotals = wx.StaticText(self.notebookOrePane, label="Totals:")
-        self.totalsBox = wx.TextCtrl(self.notebookOrePane, style=wx.TE_MULTILINE, size=(-1, -1))
-        self.totalsBox.SetFont(fontSettings)
+        img = wx.EmptyImage(240, 240)
+        self.orePie = wx.StaticBitmap(self.notebookOrePane, wx.ID_ANY, wx.BitmapFromImage(img))
+
+        self.lblOreTotals = wx.StaticText(self.notebookOrePane, label="Ore Totals:")
+        self.oreTotalsBox = wx.TextCtrl(self.notebookOrePane, style=wx.TE_MULTILINE, size=(-1, -1))
+        self.oreTotalsBox.SetFont(fontSettings)
+
+        #self.lblIceTotals = wx.StaticText(self.notebookOrePane, label="Ice Totals:")
+        #self.iceTotalsBox = wx.TextCtrl(self.notebookOrePane, style=wx.TE_MULTILINE, size=(-1, -1))
+        #self.iceTotalsBox.SetFont(fontSettings)
 
         # salvageList tab widgets
         self.notebookSalvagePane = wx.Panel(self.mainNotebook, -1)
@@ -632,13 +661,11 @@ class MainWindow(wx.Frame):
     def __do_layout(self):
         # Use some sizers to see layout options
         mainSizer = wx.BoxSizer(wx.VERTICAL)
-        oreTabSizer = wx.BoxSizer(wx.VERTICAL)
         reprocessTabSizer = wx.BoxSizer(wx.VERTICAL)
 
         logTabSizer = wx.BoxSizer(wx.HORIZONTAL)
         oreSizer = wx.BoxSizer(wx.VERTICAL)
         iceSizer = wx.BoxSizer(wx.VERTICAL)
-        totalSizer = wx.BoxSizer(wx.VERTICAL)
         lootSizer = wx.BoxSizer(wx.VERTICAL)
 
         oreSizer.Add(self.lblOre, 0, wx.EXPAND | wx.ALL, 1)
@@ -646,9 +673,6 @@ class MainWindow(wx.Frame):
 
         iceSizer.Add(self.lblIce, 0, wx.EXPAND | wx.ALL, 1)
         iceSizer.Add(self.iceBox, 1, wx.EXPAND | wx.ALL, 1)
-
-        totalSizer.Add(self.lblTotals, 0, wx.EXPAND | wx.ALL, 1)
-        totalSizer.Add(self.totalsBox, 1, wx.EXPAND | wx.ALL, 1)
 
         iceSizer.Add(self.lblSalvage, 0, wx.EXPAND | wx.ALL, 1)
         iceSizer.Add(self.salvageBox, 1, wx.EXPAND | wx.ALL, 1)
@@ -659,13 +683,25 @@ class MainWindow(wx.Frame):
         logTabSizer.Add(oreSizer, 1, wx.EXPAND | wx.ALL, 1)
         logTabSizer.Add(iceSizer, 1, wx.EXPAND | wx.ALL, 1)
         logTabSizer.Add(lootSizer, 1, wx.EXPAND | wx.ALL, 1)
+        self.notebookLogPane.SetSizer(logTabSizer)
 
-        oreTabSizer.Add(totalSizer, 1, wx.EXPAND | wx.ALL, 1)
+        oreTabSizer = wx.BoxSizer(wx.HORIZONTAL)
+        oreTotalSizer = wx.BoxSizer(wx.VERTICAL)
+        #iceTotalSizer = wx.BoxSizer(wx.VERTICAL)
+
+        oreTotalSizer.Add(self.lblOreTotals, 0, wx.EXPAND | wx.ALL, 1)
+        #oreTotalSizer.Add(self.orePie, 0, wx.EXPAND | wx.ALL, 3)
+        oreTotalSizer.Add(self.oreTotalsBox, 1, wx.EXPAND | wx.ALL, 1)
+
+        #iceTotalSizer.Add(self.lblIceTotals, 0, wx.EXPAND | wx.ALL, 1)
+        #iceTotalSizer.Add(self.iceTotalsBox, 1, wx.EXPAND | wx.ALL, 1)
+
+        oreTabSizer.Add(self.orePie, 2, wx.EXPAND | wx.ALL, 0)
+        oreTabSizer.Add(oreTotalSizer, 1, wx.EXPAND | wx.ALL, 0)
+        #oreTabSizer.Add(iceTotalSizer, 1, wx.EXPAND | wx.ALL, 0)
+        self.notebookOrePane.SetSizer(oreTabSizer)
 
         reprocessTabSizer.Add(self.salvageList, 1, wx.EXPAND | wx.ALL, 1)
-
-        self.notebookLogPane.SetSizer(logTabSizer)
-        self.notebookOrePane.SetSizer(oreTabSizer)
         self.notebookSalvagePane.SetSizer(reprocessTabSizer)
 
         self.mainNotebook.AddPage(self.notebookLogPane, ("Log"))
@@ -707,7 +743,26 @@ class MainWindow(wx.Frame):
                 self.oreBox.SetValue(oreOutput)  # Changes text box content to string oreOutput.
                 self.salvageBox.SetValue(salvageOutput)  # Changes text box content to string salvageOutput.
                 self.otherBox.SetValue(otherOutput)  # Changes text box content to string otherOutput.
-                self.totalsBox.SetValue(totalsOutput)
+
+                makePie(orePieData)
+                img = wx.Image('images/ore.png', wx.BITMAP_TYPE_ANY)
+
+                # Resize the pylab image at the correct aspect to fit the sizer.
+                # Might move this to makePie and use the PIL library to resize the image file.
+                origW, origH = img.GetWidth(), img.GetHeight()
+                W, H = self.orePie.Size
+                if (origW > W) or (origH > H):
+                    aspect = float(origW) / float(origH)
+                    if ((W * aspect) <= H):
+                        newW = W
+                        newH = W * aspect
+                    else:
+                        newH = H
+                        newW = H * aspect
+                img = img.Scale(newW, newH)
+
+                self.orePie.SetBitmap(wx.BitmapFromImage(img))
+                self.oreTotalsBox.SetValue(totalsOutput)
 
                 if other:
                     systemID = 30002659
@@ -715,43 +770,27 @@ class MainWindow(wx.Frame):
                     fetchMinerals()
 
                     ticker = ("%s:    " % systemNames[systemID])
-                    #print("Mineral Prices from %s\n" % systemNames[systemID])
 
                     for mineral in mineralIDs:
                         ticker = ('%s%s: Buy: %s / Sell: %s    ' % (ticker, mineralIDs[mineral], mineralBuy[mineral], mineralSell[mineral]))
-                        #print('%s (%s): Buy: %s / Sell: %s' % (mineralIDs[mineral], int(mineral), mineralBuy[mineral], mineralSell[mineral]))
 
-                    #print(other)
                     for item in other:
                         if item[1] not in names:
                             names.append(item[1])
 
-                    #print(names)
-
                     typeNames, typePortions = id2name('name', names)
 
-                    #systemID = 30002659
+                    #systemID = 30002659  # Dodi
                     idList = []
                     for item in typeNames:
                         idList.append(item)
 
-                    #print(idList)
-                    #idList = [4473, 16437]
                     fetchItems(idList)
 
-                    #print("\nPrices Limited to %s:    " % systemNames[systemID])
-
                     tempSalvageRows = []
-                    #print(typeNames)
-                    #print(itemBuy)
-                    #print(itemSell)
 
                     for item in typeNames:
-                        #output = reprocess(16437)
                         output = reprocess(int(item))
-                        #print(typeNames[item])
-                        #print('%s (%s): Buy: %s / Sell: %s' % (typeNames[item], int(item), itemBuy[item], itemSell[item]))
-                        #print(output)
 
                         buyTotal = 0  # Fullfilling Buy orders
                         sellTotal = 0  # Placing Sell orders
@@ -760,8 +799,6 @@ class MainWindow(wx.Frame):
                                 #print('%s x %s = %s' % (mineralIDs[key], output[key], (int(output[key]) * mineralBuy[key])))
                                 buyTotal = buyTotal + (int(output[key]) * mineralBuy[key])
                                 sellTotal = sellTotal + (int(output[key]) * mineralSell[key])
-                        #print('Reprocess total fullfilling Buy orders= %s ISK' % (buyTotal))
-                        #print('Reprocess total placing Sell orders= %s ISK\n' % (sellTotal))
                         if (sellTotal > itemSell[item]):
                             action = 'Reprocess'
                         else:
