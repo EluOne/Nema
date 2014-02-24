@@ -497,7 +497,7 @@ def processLog():
                 totalsOutput = ('%s%s x %s\n' % (totalsOutput, key, oreMined[key]))
             totalsOutput = ('%s\n' % (totalsOutput))
 
-            refineOre(oreMined)
+            #refineOre(oreMined)
 
             oreTotals = sorted(oreTotals, key=itemgetter(2), reverse=True)
             totalsOutput = ('%sPercentage of Ore: (%.2f) m3\n\n' % (totalsOutput, totalOre))
@@ -752,7 +752,7 @@ class MainWindow(wx.Frame):
                 self.salvageBox.SetValue(salvageOutput)  # Changes text box content to string salvageOutput.
                 self.otherBox.SetValue(otherOutput)  # Changes text box content to string otherOutput.
 
-                if orePieData:
+                if orePieData:  # Don't call the pie chart function if there is no ore data.
                     makePie(orePieData)
                     img = wx.Image('images/ore.png', wx.BITMAP_TYPE_ANY)
 
