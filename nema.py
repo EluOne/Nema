@@ -32,7 +32,7 @@ import pylab
 
 from operator import itemgetter
 
-from ObjectListView import ObjectListView, ColumnDefn, GroupListView
+from ObjectListView import ColumnDefn, GroupListView
 
 # This needs connecting to the ui soon.
 compact = bool(False)
@@ -537,16 +537,23 @@ def processLog():
 def makePie(values):
     # make a square figure and axes
     pylab.figure(1, figsize=(6, 6))
-    ax = pylab.axes([0.1, 0.1, 0.8, 0.8])
 
+    # Initialise the data lists.
     labels = []
     fracs = []
     explode = []
 
+    # Check who mined the most
+    most = max(values.iterkeys(), key=(lambda key: values[key]))
+
+    # values should be in a dictionary format with the pilot names as keys.
     for pilot in values:
         labels.append(pilot)
         fracs.append(values[pilot])
-        explode.append(0)
+        if pilot == most:
+            explode.append(0.05)
+        else:
+            explode.append(0)
 
     pylab.pie(fracs, explode=explode, labels=labels, autopct='%1.1f%%', shadow=True)
 
@@ -745,25 +752,31 @@ class MainWindow(wx.Frame):
                 self.salvageBox.SetValue(salvageOutput)  # Changes text box content to string salvageOutput.
                 self.otherBox.SetValue(otherOutput)  # Changes text box content to string otherOutput.
 
-                makePie(orePieData)
-                img = wx.Image('images/ore.png', wx.BITMAP_TYPE_ANY)
+                if orePieData:
+                    makePie(orePieData)
+                    img = wx.Image('images/ore.png', wx.BITMAP_TYPE_ANY)
 
-                # Resize the pylab image at the correct aspect to fit the sizer.
-                # Might move this to makePie and use the PIL library to resize the image file.
-                origW, origH = img.GetWidth(), img.GetHeight()
-                W, H = self.orePie.Size
-                if (origW > W) or (origH > H):
-                    aspect = float(origW) / float(origH)
-                    if ((W * aspect) <= H):
-                        newW = W
-                        newH = W * aspect
-                    else:
-                        newH = H
-                        newW = H * aspect
-                # Need to add padding to image if aspect differs from sizers aspect.
-                img = img.Scale(newW, newH)
+                    # Resize the pylab image at the correct aspect to fit the sizer.
+                    # Might move this to makePie and use the PIL library to resize the image file.
+                    origW, origH = img.GetWidth(), img.GetHeight()
+                    W, H = self.orePie.Size
+                    if (origW > W) or (origH > H):
+                        aspect = float(origW) / float(origH)
+                        if ((W * aspect) <= H):  # The image is too wide.
+                            newW = W
+                            newH = W * aspect
+                        else:  # The image is too tall.
+                            newH = H
+                            newW = H * aspect
+                    img = img.Scale(newW, newH)
 
-                self.orePie.SetBitmap(wx.BitmapFromImage(img))
+                    # Add padding to image if aspect differs from sizers aspect.
+                    posX = (W - newW) / 2
+                    posY = (H - newH) / 2
+                    img = img.Resize((W, H), (posX, posY), 255, 255, 255)
+
+                    # Finally display the resized graph.
+                    self.orePie.SetBitmap(wx.BitmapFromImage(img))
                 self.oreTotalsBox.SetValue(totalsOutput)
 
                 if other:
