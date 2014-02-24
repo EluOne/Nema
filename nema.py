@@ -880,7 +880,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>."""
 
         #info.SetIcon(wx.Icon('', wx.BITMAP_TYPE_PNG))
         info.SetName('Nova Echo Mining Assistant')
-        info.SetVersion('1.0.1')
+        info.SetVersion('1.1.0')
         info.SetDescription(description)
         #info.SetCopyright('(C) 2013 Tim Cumming')
         info.SetWebSite('https://github.com/EluOne/Nema')
