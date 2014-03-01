@@ -34,8 +34,8 @@ from operator import itemgetter
 
 from ObjectListView import ColumnDefn, GroupListView
 
-# This needs connecting to the ui soon.
-compact = bool(False)
+import config
+from gui.preferencesDialog import PreferencesDialog
 
 #Initialise lists
 ore = []
@@ -47,8 +47,6 @@ pilots = []
 icePilots = []
 orePilots = []
 
-# System db id numbers
-systemNames = {30002659: 'Dodixie', 30000142: 'Jita'}
 # Mineral db id numbers
 mineralIDs = {34: 'Tritanium', 35: 'Pyerite', 36: 'Mexallon', 37: 'Isogen', 38: 'Nocxium', 39: 'Zydrine', 40: 'Megacyte', 11399: 'Morphite'}
 # Set the market prices from Eve Central will look like:
@@ -149,7 +147,8 @@ def fetchMinerals():
     global mineralSell
 
     # All base minerals from Dodi url:
-    apiURL = 'http://api.eve-central.com/api/marketstat?typeid=34&typeid=35&typeid=36&typeid=37&typeid=38&typeid=39&typeid=40&typeid=11399&usesystem=30002659'
+    baseUrl = 'http://api.eve-central.com/api/marketstat?typeid=34&typeid=35&typeid=36&typeid=37&typeid=38&typeid=39&typeid=40&typeid=11399&usesystem=%s'
+    apiURL = baseUrl % (config.settings['system'])
 
     try:  # Try to connect to the API server
         target = urllib2.urlopen(apiURL)  # download the file
@@ -208,7 +207,8 @@ def fetchItems(typeIDs):
         numIdLists = list(range(len(idList)))
         for x in numIdLists:  # Iterate over all of the id lists generated above.
             # Item prices from Dodi url:
-            apiURL = 'http://api.eve-central.com/api/marketstat?typeid=%s&usesystem=30002659' % (idList[x])
+            baseUrl = 'http://api.eve-central.com/api/marketstat?typeid=%s&usesystem=%s'
+            apiURL = baseUrl % (idList[x], config.settings['system'])
             #print(apiURL)
 
             try:  # Try to connect to the API server
@@ -358,7 +358,7 @@ def processLog():
     oreMined = {}
 
     # Output: [0] Character, [1] ItemType, [2] Quantity, [3] ItemGroup, [4] Volume
-    if compact is True:
+    if config.settings['compact'] is True:
         # Compact Mode:
         # Process the list of ore mined for duplicate type entries, and add them together. This produces a list that only details the ore group.
         ore = sorted(ore, key=itemgetter(0, 3))
@@ -453,7 +453,7 @@ def processLog():
                 iceOutput = ('%s%s\n' % (iceOutput, name))
                 for entry in sorted(ice, key=itemgetter(0, 3)):
                     if name == entry[0]:
-                        if compact is True:
+                        if config.settings['compact'] is True:
                             iceOutput = ('%s%s x %s = %s m3\n' % (iceOutput, entry[2], entry[3], entry[4]))
                         else:
                             iceOutput = ('%s%s x %s = %s m3\n' % (iceOutput, entry[2], entry[1], entry[4]))
@@ -481,7 +481,7 @@ def processLog():
                 oreOutput = ('%s%s\n' % (oreOutput, name))
                 for entry in sorted(ore, key=itemgetter(0, 3)):
                     if name == entry[0]:
-                        if compact is True:
+                        if config.settings['compact'] is True:
                             oreOutput = ('%s%s x %s = %.2f m3\n' % (oreOutput, entry[2], entry[3], entry[4]))
                         else:
                             oreOutput = ('%s%s x %s = %.2f m3\n' % (oreOutput, entry[2], entry[1], entry[4]))
@@ -622,23 +622,35 @@ class MainWindow(wx.Frame):
 
         self.statusbar = self.CreateStatusBar()  # A Statusbar in the bottom of the window
 
-        # Setting up the menu.
-        filemenu = wx.Menu()
-        menuAbout = filemenu.Append(wx.ID_ABOUT, "&About", " Information about this program")
-        menuOpen = filemenu.Append(wx.ID_OPEN, "&Open", " Open a log file")
-        menuExport = filemenu.Append(wx.ID_SAVE, "&Export", " Export the Loot Tab")
-        menuExit = filemenu.Append(wx.ID_EXIT, "E&xit", " Terminate the program")
+        # Menu Bar
+        self.frame_menubar = wx.MenuBar()
 
-        # Creating the menubar.
-        menuBar = wx.MenuBar()
-        menuBar.Append(filemenu, "&File")  # Adding the "filemenu" to the MenuBar
-        self.SetMenuBar(menuBar)  # Adding the MenuBar to the Frame content.
+        self.fileMenu = wx.Menu()
+        self.menuAbout = wx.MenuItem(self.fileMenu, wx.ID_ABOUT, "&About", "", wx.ITEM_NORMAL)
+        self.fileMenu.AppendItem(self.menuAbout)
+
+        self.menuOpen = wx.MenuItem(self.fileMenu, wx.ID_OPEN, "&Open", " Open a log file", wx.ITEM_NORMAL)
+        self.fileMenu.AppendItem(self.menuOpen)
+
+        self.menuExport = wx.MenuItem(self.fileMenu, wx.ID_SAVE, "&Export", " Export the Loot Tab", wx.ITEM_NORMAL)
+        self.fileMenu.AppendItem(self.menuExport)
+
+        self.menuConfig = wx.MenuItem(self.fileMenu, wx.ID_PREFERENCES, "&Configure", "", wx.ITEM_NORMAL)
+        self.fileMenu.AppendItem(self.menuConfig)
+
+        self.menuExit = wx.MenuItem(self.fileMenu, wx.ID_EXIT, "E&xit", "", wx.ITEM_NORMAL)
+        self.fileMenu.AppendItem(self.menuExit)
+
+        self.frame_menubar.Append(self.fileMenu, "File")
+        self.SetMenuBar(self.frame_menubar)
+        # Menu Bar end
 
         # Menu events.
-        self.Bind(wx.EVT_MENU, self.OnOpen, menuOpen)
-        self.Bind(wx.EVT_MENU, self.OnExport, menuExport)
-        self.Bind(wx.EVT_MENU, self.OnExit, menuExit)
-        self.Bind(wx.EVT_MENU, self.OnAbout, menuAbout)
+        self.Bind(wx.EVT_MENU, self.OnOpen, self.menuOpen)
+        self.Bind(wx.EVT_MENU, self.onConfig, self.menuConfig)
+        self.Bind(wx.EVT_MENU, self.OnExport, self.menuExport)
+        self.Bind(wx.EVT_MENU, self.OnExit, self.menuExit)
+        self.Bind(wx.EVT_MENU, self.OnAbout, self.menuAbout)
 
         self.__set_properties()
         self.__do_layout()
@@ -780,11 +792,10 @@ class MainWindow(wx.Frame):
                 self.oreTotalsBox.SetValue(totalsOutput)
 
                 if other:
-                    systemID = 30002659
                     names = []
                     fetchMinerals()
 
-                    ticker = ("%s:    " % systemNames[systemID])
+                    ticker = ("%s:    " % config.systemNames[config.settings['system']])
 
                     for mineral in mineralIDs:
                         ticker = ('%s%s: Buy: %s / Sell: %s    ' % (ticker, mineralIDs[mineral], mineralBuy[mineral], mineralSell[mineral]))
@@ -795,7 +806,6 @@ class MainWindow(wx.Frame):
 
                     typeNames, typePortions = id2name('name', names)
 
-                    #systemID = 30002659  # Dodi
                     idList = []
                     for item in typeNames:
                         idList.append(item)
@@ -852,6 +862,12 @@ class MainWindow(wx.Frame):
             f.write(dataExport)
             f.close()
         dlg.Destroy()
+
+    def onConfig(self, event):
+        # Open the config frame for user.
+        dlg = PreferencesDialog(None)
+        dlg.ShowModal()  # Show it
+        dlg.Destroy()  # finally destroy it when finished.
 
     def OnAbout(self, e):
         description = """A tool designed initially for our corporate industrialists to
