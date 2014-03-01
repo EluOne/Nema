@@ -47,8 +47,6 @@ pilots = []
 icePilots = []
 orePilots = []
 
-# Mineral db id numbers
-mineralIDs = {34: 'Tritanium', 35: 'Pyerite', 36: 'Mexallon', 37: 'Isogen', 38: 'Nocxium', 39: 'Zydrine', 40: 'Megacyte', 11399: 'Morphite'}
 # Set the market prices from Eve Central will look like:
 # mineralBuy = {34: 4.65, 35: 11.14, 36: 43.82, 37: 120.03, 38: 706.93, 39: 727.19, 40: 1592.10}
 mineralBuy = {}
@@ -61,32 +59,6 @@ orePieData = {}
 
 # These are the expected column headers from the first row of the data file
 columns = {'Time', 'Character', 'Item Type', 'Quantity', 'Item Group'}
-
-# EVE ore and ice volumes per unit as a dictionary
-OreTypes = {'Arkonor': 16, 'Bistot': 16, 'Crokite': 16, 'Dark Ochre': 8,
-    'Gneiss': 5, 'Hedbergite': 3, 'Hemorphite': 3, 'Jaspet': 2,
-    'Kernite': 1.2, 'Mercoxit': 40, 'Omber': 0.6, 'Plagioclase': 0.35,
-    'Pyroxeres': 0.3, 'Scordite': 0.15, 'Spodumain': 16, 'Veldspar': 0.1}
-IceTypes = {'Blue Ice': 1000, 'White Glaze': 1000, 'Glacial Mass': 1000, 'Clear Icicle': 1000}
-
-# Refined outputs: [0]Mineral Name, [1]Batch, [2]Tri, [3]Pye, [4]Mex, [5]Iso, [6]Noc, [7]Zyd, [8]Meg, [9]Mor
-# TODO: Expand to include all ore types (2 more per group)
-OreOutput = [['Arkonor', 200, 300, 0, 0, 0, 0, 166, 333, 0],
-             ['Bistot', 200, 0, 170, 0, 0, 0, 341, 170, 0],
-             ['Crokite', 250, 331, 0, 0, 0, 331, 663, 0, 0],
-             ['Dark Ochre', 400, 250, 0, 0, 0, 500, 250, 0, 0],
-             ['Gneiss', 400, 171, 0, 171, 343, 0, 171, 0, 0],
-             ['Hedbergite', 500, 0, 0, 0, 708, 354, 32, 0, 0],
-             ['Hemorphite', 500, 212, 0, 0, 212, 424, 28, 0, 0],
-             ['Jaspet', 500, 259, 259, 518, 0, 259, 8, 0, 0],
-             ['Kernite', 400, 386, 0, 773, 386, 0, 0, 0, 0],
-             ['Mercoxit', 250, 0, 0, 0, 0, 0, 0, 0, 530],
-             ['Omber', 500, 307, 123, 0, 307, 0, 0, 0, 0],
-             ['Plagioclase', 333, 256, 512, 256, 0, 0, 0, 0, 0],
-             ['Pyroxeres', 333, 844, 59, 120, 0, 11, 0, 0, 0],
-             ['Scordite', 333, 833, 416, 0, 0, 0, 0, 0, 0, 0],
-             ['Spodumain', 250, 700, 140, 0, 0, 0, 0, 140, 0],
-             ['Veldspar', 300, 1000, 0, 0, 0, 0, 0, 0, 0]]
 
 
 class Salvage(object):
@@ -162,7 +134,7 @@ def fetchMinerals():
             ids = child.attrib
             buy = child.find('buy')
             sell = child.find('sell')
-            if int(ids['id']) in mineralIDs:
+            if int(ids['id']) in config.mineralIDs:
                 mineralBuy[int(ids['id'])] = float(buy.find('max').text)
                 mineralSell[int(ids['id'])] = float(sell.find('min').text)
     except urllib2.HTTPError as err:
@@ -303,16 +275,16 @@ def fetchData(logContent):
                 if data[1] not in pilots:
                     pilots.append(data[1])
                 # Split ore from other items
-                if data[4] in OreTypes:
+                if data[4] in config.OreTypes:
                     if data[1] not in orePilots:
                         orePilots.append(data[1])
-                    volume = (OreTypes[(data[4])] * int(data[3]))
+                    volume = (config.OreTypes[(data[4])] * int(data[3]))
                     ore.append([data[1], data[2], data[3], data[4], volume])
                 # Split ice from other items
                 elif data[4] == 'Ice':
                     if data[1] not in icePilots:
                         icePilots.append(data[1])
-                    volume = (IceTypes[(data[2])] * int(data[3]))
+                    volume = (config.IceTypes[(data[2])] * int(data[3]))
                     ice.append([data[1], data[2], data[3], data[4], volume])
                 elif data[4] == 'Salvaged Materials':
                     salvage.append([data[1], data[2], data[3], data[4], 0])
@@ -324,20 +296,20 @@ def fetchData(logContent):
 def refineOre(oreMined):
     # TODO: Use the ore to mineral values to calculate mineral output
     #for key in oreMined:
-    numItems = range(len(OreOutput))
-    numMinerals = range(2, 9)  # We only need these values from OreOutput
+    numItems = range(len(config.OreOutput))
+    numMinerals = range(2, 9)  # We only need these values from config.OreOutput
     # To match the keys used above:
     mineralNames = {2: 'Tritanium', 3: 'Pyrite', 4: 'Mexallon', 5: 'Isogen', 6: 'Nocxium', 7: 'Zydrine', 8: 'Megacyte', 9: 'Morphite'}
 
     # Iterate over the ore types
     for item in numItems:
         # Refined outputs: [0]Mineral Name, [1]Batch, [2]Tri, [3]Pye, [4]Mex, [5]Iso, [6]Noc, [7]Zyd, [8]Meg, [9]Mor
-        if (OreOutput[item][0]) in oreMined:
-            batches = math.floor(float(oreMined[OreOutput[item][0]]) / float(OreOutput[item][1]))
-            print('%s x %s' % (OreOutput[item][0], batches))
+        if (config.OreOutput[item][0]) in oreMined:
+            batches = math.floor(float(oreMined[config.OreOutput[item][0]]) / float(config.OreOutput[item][1]))
+            print('%s x %s' % (config.OreOutput[item][0], batches))
             for x in numMinerals:
-                if OreOutput[item][x] > 0:
-                    mineral = OreOutput[item][x] * batches
+                if config.OreOutput[item][x] > 0:
+                    mineral = config.OreOutput[item][x] * batches
                     print('    %s x %s' % (mineralNames[x], mineral))
 
 
@@ -374,7 +346,7 @@ def processLog():
                 previous = item - 1
                 if (ore[item][0] == ore[previous][0]) and (ore[item][3] == ore[previous][3]):
                     newQuantity = (int(ore[item][2]) + int(ore[previous][2]))
-                    newVolume = (OreTypes[ore[item][3]] * int(newQuantity))
+                    newVolume = (config.OreTypes[ore[item][3]] * int(newQuantity))
                     ore[item] = [ore[item][0], ore[item][3], newQuantity, ore[item][3], newVolume]
                     ore[previous] = 'deleted'
 
@@ -396,7 +368,7 @@ def processLog():
                 previous = item - 1
                 if (ore[item][0] == ore[previous][0]) and (ore[item][1] == ore[previous][1]):
                     newQuantity = (int(ore[item][2]) + int(ore[previous][2]))
-                    newVolume = (OreTypes[ore[item][3]] * int(newQuantity))
+                    newVolume = (config.OreTypes[ore[item][3]] * int(newQuantity))
                     ore[item] = [ore[item][0], ore[item][1], newQuantity, ore[item][3], newVolume]
                     ore[previous] = 'deleted'
 
@@ -797,8 +769,8 @@ class MainWindow(wx.Frame):
 
                     ticker = ("%s:    " % config.systemNames[config.settings['system']])
 
-                    for mineral in mineralIDs:
-                        ticker = ('%s%s: Buy: %s / Sell: %s    ' % (ticker, mineralIDs[mineral], mineralBuy[mineral], mineralSell[mineral]))
+                    for mineral in config.mineralIDs:
+                        ticker = ('%s%s: Buy: %s / Sell: %s    ' % (ticker, config.mineralIDs[mineral], mineralBuy[mineral], mineralSell[mineral]))
 
                     for item in other:
                         if item[1] not in names:
@@ -820,8 +792,8 @@ class MainWindow(wx.Frame):
                         buyTotal = 0  # Fullfilling Buy orders
                         sellTotal = 0  # Placing Sell orders
                         for key in output:
-                            if key in mineralIDs:
-                                #print('%s x %s = %s' % (mineralIDs[key], output[key], (int(output[key]) * mineralBuy[key])))
+                            if key in config.mineralIDs:
+                                #print('%s x %s = %s' % (config.mineralIDs[key], output[key], (int(output[key]) * mineralBuy[key])))
                                 buyTotal = buyTotal + (int(output[key]) * mineralBuy[key])
                                 sellTotal = sellTotal + (int(output[key]) * mineralSell[key])
                         if (sellTotal > itemSell[item]):
