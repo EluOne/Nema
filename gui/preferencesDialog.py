@@ -81,8 +81,10 @@ class PreferencesDialog(wx.Dialog):
         # Market Selection
         marketSelection = self.systemChoice.GetCurrentSelection()
         marketID = config.systemList[marketSelection][0]
+        marketName = config.systemList[marketSelection][1]
 
         config.settings['system'] = marketID
+        config.settings['systemName'] = marketName
 
         # Checkbox Setting
         config.settings['compact'] = self.compact_cb.GetValue()

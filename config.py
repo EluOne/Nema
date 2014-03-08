@@ -21,21 +21,27 @@
 import os.path
 import pickle
 
+
+# This will become settings = {'system': 30000142, 'compact' = False, 'systemName': Jita} for example
 settings = {}
 
 # System db id numbers
-systemNames = {30002659: 'Dodixie', 30000142: 'Jita', 30002053: 'Hek', 30002187: 'Amarr'}
 systemList = [[30002659, 'Dodixie'], [30000142, 'Jita'], [30002053, 'Hek'], [30002187, 'Amarr']]
 
 # Mineral db id numbers
-mineralIDs = {34: 'Tritanium', 35: 'Pyerite', 36: 'Mexallon', 37: 'Isogen', 38: 'Nocxium', 39: 'Zydrine', 40: 'Megacyte', 11399: 'Morphite'}
+mineralIDs = {34: 'Tritanium', 35: 'Pyerite', 36: 'Mexallon', 37: 'Isogen',
+              38: 'Nocxium', 39: 'Zydrine', 40: 'Megacyte', 11399: 'Morphite'}
 
 # EVE ore and ice volumes per unit as a dictionary
 OreTypes = {'Arkonor': 16, 'Bistot': 16, 'Crokite': 16, 'Dark Ochre': 8,
-    'Gneiss': 5, 'Hedbergite': 3, 'Hemorphite': 3, 'Jaspet': 2,
-    'Kernite': 1.2, 'Mercoxit': 40, 'Omber': 0.6, 'Plagioclase': 0.35,
-    'Pyroxeres': 0.3, 'Scordite': 0.15, 'Spodumain': 16, 'Veldspar': 0.1}
-IceTypes = {'Blue Ice': 1000, 'White Glaze': 1000, 'Glacial Mass': 1000, 'Clear Icicle': 1000}
+            'Gneiss': 5, 'Hedbergite': 3, 'Hemorphite': 3, 'Jaspet': 2,
+            'Kernite': 1.2, 'Mercoxit': 40, 'Omber': 0.6, 'Plagioclase': 0.35,
+            'Pyroxeres': 0.3, 'Scordite': 0.15, 'Spodumain': 16, 'Veldspar': 0.1}
+
+IceTypes = {'Blue Ice': 1000, 'White Glaze': 1000, 'Pristine White Glaze': 1000,
+            'Glacial Mass': 1000, 'Smooth Glacial Mass': 1000, 'Blue Ice': 1000,
+            'Thick Blue Ice': 1000, 'Clear Icicle': 1000, 'Enriched Clear Icicle': 1000,
+            'Glare Crust': 1000, 'Dark Glitter': 1000, 'Gelidus': 1000, 'Krystallos': 1000}
 
 # Refined outputs: [0]Mineral Name, [1]Batch, [2]Tri, [3]Pye, [4]Mex, [5]Iso, [6]Noc, [7]Zyd, [8]Meg, [9]Mor
 # TODO: Expand to include all ore types (2 more per group)
@@ -65,4 +71,5 @@ else:
     # Default compact mode to false
     settings['compact'] = False
     # Default market system to Jita
-    settings['system'] = 30000142
+    settings['system'] = systemList[1][0]  # 30000142
+    settings['systemName'] = systemList[1][1]  # Jita

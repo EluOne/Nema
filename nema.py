@@ -767,7 +767,7 @@ class MainWindow(wx.Frame):
                     names = []
                     fetchMinerals()
 
-                    ticker = ("%s:    " % config.systemNames[config.settings['system']])
+                    ticker = ("%s:    " % config.settings['systemName'])
 
                     for mineral in config.mineralIDs:
                         ticker = ('%s%s: Buy: %s / Sell: %s    ' % (ticker, config.mineralIDs[mineral], mineralBuy[mineral], mineralSell[mineral]))
