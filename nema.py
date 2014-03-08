@@ -19,9 +19,8 @@
 # Created: 05/03/13
 
 import math
-import urllib2
-import httplib
 import traceback
+import requests
 
 import sqlite3 as lite
 import xml.etree.ElementTree as etree
@@ -36,6 +35,7 @@ from ObjectListView import ColumnDefn, GroupListView
 
 import config
 from gui.preferencesDialog import PreferencesDialog
+
 
 #Initialise lists
 ore = []
@@ -123,11 +123,9 @@ def fetchMinerals():
     apiURL = baseUrl % (config.settings['system'])
 
     try:  # Try to connect to the API server
-        target = urllib2.urlopen(apiURL)  # download the file
-        downloadedData = target.read()  # convert to string
-        target.close()  # close file because we don't need it anymore
+        downloadedData = requests.get(apiURL, headers=config.headers)
 
-        tree = etree.fromstring(downloadedData)
+        tree = etree.fromstring(downloadedData.text)
         types = tree.findall('.//type')
 
         for child in types:
@@ -137,13 +135,13 @@ def fetchMinerals():
             if int(ids['id']) in config.mineralIDs:
                 mineralBuy[int(ids['id'])] = float(buy.find('max').text)
                 mineralSell[int(ids['id'])] = float(sell.find('min').text)
-    except urllib2.HTTPError as err:
+    except requests.exceptions.HTTPError as err:  # An HTTP error occurred.
         error = ('HTTP Error: %s %s\n' % (str(err.code), str(err.reason)))  # Error String
         onError(error)
-    except urllib2.URLError as err:
+    except requests.exceptions.ConnectionError as err:  # A Connection error occurred.
         error = ('Error Connecting to Tranquility: ' + str(err.reason))  # Error String
         onError(error)
-    except httplib.HTTPException as err:
+    except requests.exceptions.RequestException as err:  # There was an ambiguous exception that occurred while handling your request.
         error = ('HTTP Exception')  # Error String
         onError(error)
     except Exception:
@@ -184,11 +182,9 @@ def fetchItems(typeIDs):
             #print(apiURL)
 
             try:  # Try to connect to the API server
-                target = urllib2.urlopen(apiURL)  # download the file
-                downloadedData = target.read()  # convert to string
-                target.close()  # close file because we don't need it anymore
+                downloadedData = requests.get(apiURL, headers=config.headers)
 
-                tree = etree.fromstring(downloadedData)
+                tree = etree.fromstring(downloadedData.text)
                 types = tree.findall('.//type')
 
                 for child in types:
@@ -198,13 +194,13 @@ def fetchItems(typeIDs):
                     if int(ids['id']) in typeIDs:
                         itemBuy[int(ids['id'])] = float(buy.find('max').text)
                         itemSell[int(ids['id'])] = float(sell.find('min').text)
-            except urllib2.HTTPError as err:
-                error = ('HTTP Error: %s %s' % (str(err.code), str(err.reason)))  # Error String
+            except requests.exceptions.HTTPError as err:  # An HTTP error occurred.
+                error = ('HTTP Error: %s %s\n' % (str(err.code), str(err.reason)))  # Error String
                 onError(error)
-            except urllib2.URLError as err:
+            except requests.exceptions.ConnectionError as err:  # A Connection error occurred.
                 error = ('Error Connecting to Tranquility: ' + str(err.reason))  # Error String
                 onError(error)
-            except httplib.HTTPException as err:
+            except requests.exceptions.RequestException as err:  # There was an ambiguous exception that occurred while handling your request.
                 error = ('HTTP Exception')  # Error String
                 onError(error)
             except Exception:
@@ -868,7 +864,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>."""
 
         #info.SetIcon(wx.Icon('', wx.BITMAP_TYPE_PNG))
         info.SetName('Nova Echo Mining Assistant')
-        info.SetVersion('1.1.1')
+        info.SetVersion(config.version)
         info.SetDescription(description)
         #info.SetCopyright('(C) 2013 Tim Cumming')
         info.SetWebSite('https://github.com/EluOne/Nema')

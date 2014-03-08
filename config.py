@@ -22,6 +22,9 @@ import os.path
 import pickle
 
 
+version = '1.1.1'
+headers = {'User-Agent': 'Nema/1.1.1'}
+
 # This will become settings = {'system': 30000142, 'compact' = False, 'systemName': Jita} for example
 settings = {}
 
