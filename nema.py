@@ -106,7 +106,7 @@ def id2name(idType, ids):  # Takes a list of IDs to query the local db or api se
                     onError(error)
 
             except lite.Error as err:
-                error = ('SQL Lite Error: ' + str(err.args[0]) + str(err.args[1:]))  # Error String
+                error = ('SQL Lite Error: ' + repr(err.args[0]) + repr(err.args[1:]))  # Error String
                 onError(error)
             finally:
                 if con:
@@ -227,7 +227,7 @@ def reprocess(itemID):  # Takes a list of IDs to query the local db or api serve
                     minerals.update({int(row[0]): int(row[1])})
 
         except lite.Error as err:
-            error = ('SQL Lite Error: ' + str(err.args[0]) + str(err.args[1:]))  # Error String
+            error = ('SQL Lite Error: ' + repr(err.args[0]) + repr(err.args[1:]))  # Error String
             onError(error)
         finally:
             if con:
