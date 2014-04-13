@@ -14,4 +14,4 @@ The unreleased version of NEMA is currently under going a large UI overhaul and 
 The main window now uses a tabbed layout to make way for the new 'Loot' tab showing the output from a new analysis tool to give the user an overview of what should be done with the items collected.
 The Loot analysis tool makes use the CCP static data dump in sqlite3 format and requires an internet connection to fetch current market data from the out of game source eve-central.com to give suggestions on what should be sold and what should be reprocessed according to your preferred local in game market.
 
-This project uses wxPython, sqlite3 and ObjectListView modules.
+This project uses wxPython, sqlite3, requests and ObjectListView modules.
